@@ -13,7 +13,11 @@ namespace JitInspector
     {
         private static readonly uint* s_default_opt;
 
+        private static readonly int* s_default_opt_set;
+
         private static readonly delegate* unmanaged[Cdecl]<void*, uint, uint> s_mono_get_optimizations_for_method;
+
+        private static readonly delegate* unmanaged[Cdecl]<uint, void> s_mono_set_optimizations;
 
         private static readonly int* s_mono_use_fast_math;
 
@@ -45,6 +49,12 @@ namespace JitInspector
         {
             ThrowIfMonoSymbolNotFound(s_mono_get_optimizations_for_method, nameof(mono_get_optimizations_for_method));
             return s_mono_get_optimizations_for_method(method, default_opt);
+        }
+
+        private static void mono_set_optimizations(uint opts)
+        {
+            ThrowIfMonoSymbolNotFound(s_mono_set_optimizations, nameof(mono_set_optimizations));
+            s_mono_set_optimizations(opts);
         }
 
         public static bool mono_use_fast_math
@@ -86,6 +96,15 @@ namespace JitInspector
             }
         }
 
+        private static bool default_opt_set
+        {
+            get
+            {
+                ThrowIfMonoSymbolNotFound(s_default_opt_set, nameof(default_opt_set));
+                return *s_default_opt_set != 0;
+            }
+        }
+
         private static void ThrowIfMonoSymbolNotFound(void* address, string symbol)
         {
             if (address == null)
@@ -109,8 +128,14 @@ namespace JitInspector
                 if (SymFromName(process.Handle, nameof(mono_get_optimizations_for_method), &info))
                     s_mono_get_optimizations_for_method = (delegate* unmanaged[Cdecl]<void*, uint, uint>)info.Address;
 
+                if (SymFromName(process.Handle, nameof(mono_set_optimizations), &info))
+                    s_mono_set_optimizations = (delegate* unmanaged[Cdecl]<uint, void>)info.Address;
+
                 if (SymFromName(process.Handle, nameof(default_opt), &info))
                     s_default_opt = (uint*)info.Address;
+
+                if (SymFromName(process.Handle, nameof(default_opt_set), &info))
+                    s_default_opt_set = (int*)info.Address;
 
                 if (SymFromName(process.Handle, nameof(mono_debug_format), &info))
                     s_mono_debug_format = (int*)info.Address;
