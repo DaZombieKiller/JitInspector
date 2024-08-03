@@ -65,11 +65,10 @@ namespace JitInspector
         {
             if (rich)
             {
-                writer.Write("<color=");
-                writer.Write("#6A9955");
-                writer.Write(">;\u00A0");
+                writer.Write("<color=#6A9955>");
             }
 
+            writer.Write(";\u00A0");
             writer.Write(comment);
 
             if (rich)
