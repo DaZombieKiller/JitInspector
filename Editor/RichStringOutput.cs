@@ -14,8 +14,16 @@ namespace JitInspector
 
         public override void Write(string text, FormatterTextKind kind)
         {
+            var color = GetColor(kind);
+
+            if (string.IsNullOrEmpty(color))
+            {
+                sb.Append(text);
+                return;
+            }
+
             sb.Append("<color=");
-            sb.Append(GetColor(kind));
+            sb.Append(color);
             sb.Append(">");
             sb.Append(text);
             sb.Append("</color>");
@@ -55,7 +63,7 @@ namespace JitInspector
             case FormatterTextKind.Number:
                 return "#9CDCFE";
             default:
-                return "white";
+                return null;
             }
         }
     }
