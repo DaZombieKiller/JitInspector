@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace JitInspector
@@ -13,7 +14,7 @@ namespace JitInspector
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SymInitialize(IntPtr hProcess, string UserSearchPath, [MarshalAs(UnmanagedType.Bool)] bool fInvadeProcess);
 
-        [DllImport("DbgHelp", ExactSpelling = true, SetLastError = true)]
+        [DllImport("DbgHelp", ExactSpelling = true)]
         public static extern uint SymSetOptions(uint SymOptions);
 
         [DllImport("DbgHelp", ExactSpelling = true, SetLastError = true)]
@@ -23,6 +24,14 @@ namespace JitInspector
         [DllImport("DbgHelp", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SymFromName(IntPtr hProcess, string Name, SYMBOL_INFOW* Symbol);
+
+        [DllImport("DbgHelp", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern ulong SymLoadModuleEx(IntPtr hProcess, IntPtr hFile, string ImageName, string ModuleName, ulong BaseOfDll, uint DllSize, void* Data, uint Flags);
+
+        public static ulong SymLoadModule(IntPtr hProcess, IntPtr hFile, ProcessModule Module, void* Data, uint Flags)
+        {
+            return SymLoadModuleEx(hProcess, hFile, Module.FileName, Module.ModuleName, (ulong)Module.BaseAddress, (uint)Module.ModuleMemorySize, Data, Flags);
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public unsafe struct SYMBOL_INFOW

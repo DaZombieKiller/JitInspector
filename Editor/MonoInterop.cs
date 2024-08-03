@@ -2,12 +2,14 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using UnityEngine;
+using UnityEditor;
 using static JitInspector.DbgHelp;
 
 namespace JitInspector
 {
 #if UNITY_EDITOR_WIN
-    [UnityEditor.InitializeOnLoad]
+    [InitializeOnLoad]
 #endif
     internal static unsafe class MonoInterop
     {
@@ -113,13 +115,39 @@ namespace JitInspector
             }
         }
 
+        private static bool IsMonoModuleName(string name)
+        {
+            return name.Equals("mono.dll", StringComparison.OrdinalIgnoreCase)
+                || name.Equals("mono-2.0-bdwgc.dll", StringComparison.OrdinalIgnoreCase);
+        }
+
     #if UNITY_EDITOR_WIN
         static MonoInterop()
         {
             using (var process = Process.GetCurrentProcess())
             {
+                var symbolPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "Library", "Symbols");
+                var searchPath = string.Join(";", new string[]
+                {
+                    Path.GetDirectoryName(EditorApplication.applicationPath),
+                    $"srv*{symbolPath}*http://symbolserver.unity3d.com/",
+                });
+
                 SymSetOptions(SYMOPT_EXACT_SYMBOLS);
-                SymInitialize(process.Handle, Path.GetDirectoryName(process.MainModule.FileName), fInvadeProcess: true);
+
+                if (!SymInitialize(process.Handle, searchPath, fInvadeProcess: false))
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+
+                foreach (ProcessModule module in process.Modules)
+                {
+                    if (!string.IsNullOrEmpty(module.ModuleName) && IsMonoModuleName(module.ModuleName))
+                    {
+                        if (SymLoadModule(process.Handle, hFile: IntPtr.Zero, module, Data: null, Flags: 0) == 0)
+                        {
+                            Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                        }
+                    }
+                }
 
                 SYMBOL_INFOW info;
                 info.SizeOfStruct = (uint)sizeof(SYMBOL_INFOW);
@@ -143,7 +171,10 @@ namespace JitInspector
                 if (SymFromName(process.Handle, nameof(mono_use_fast_math), &info))
                     s_mono_use_fast_math = (int*)info.Address;
 
-                SymCleanup(process.Handle);
+                if (!SymCleanup(process.Handle))
+                {
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                }
             }
         }
     #endif
