@@ -38,6 +38,9 @@ namespace JitInspector
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool mono_debug_enabled();
 
+        [DllImport("__Internal", ExactSpelling = true)]
+        public static extern MonoDebugOptions* mini_get_debug_options();
+
         public static uint mono_get_optimizations_for_method(void* method, uint default_opt)
         {
             ThrowIfMonoSymbolNotFound(s_mono_get_optimizations_for_method, nameof(mono_get_optimizations_for_method));
@@ -120,5 +123,18 @@ namespace JitInspector
             }
         }
     #endif
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct MonoDebugOptions
+        {
+            [FieldOffset(0x14)]
+            public int better_cast_details;
+
+            [FieldOffset(0x18)]
+            public int mdb_optimizations;
+
+            [FieldOffset(0x30)]
+            public int gdb;
+        }
     }
 }

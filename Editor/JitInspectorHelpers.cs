@@ -87,15 +87,26 @@ namespace JitInspector
             ulong tail = (ulong)(code + size);
 
             WriteComment(writer, $"Assembly listing for method {method.DeclaringType.FullName}:{method.Name}", rich);
-            var opts = JitInspectorHelpers.GetOptimizations(method.MethodHandle);
+            var opts = GetOptimizations(method.MethodHandle);
 
             if (opts.Length > 0)
                 WriteComment(writer, $"--optimize={string.Join(",", opts)}", rich);
 
-            if (MonoInterop.mono_debug_enabled())
-                WriteComment(writer, "--debug", rich);
+            if (mono_debug_enabled())
+            {
+                var options = GetDebugOptions();
 
-            if (MonoInterop.mono_use_fast_math)
+                if (options.Length > 0)
+                {
+                    WriteComment(writer, $"--debug={string.Join(",", options)}", rich);
+                }
+                else
+                {
+                    WriteComment(writer, "--debug", rich);
+                }
+            }
+
+            if (mono_use_fast_math)
                 WriteComment(writer, "--ffast-math", rich);
 
             writer.WriteLine();
@@ -149,6 +160,35 @@ namespace JitInspector
                     names[i] = '-' + names[i];
                 }
             }
+
+            return names;
+        }
+
+        public static string[] GetDebugOptions()
+        {
+            var debug = mini_get_debug_options();
+            var count = 0;
+
+            if (debug->better_cast_details != 0)
+                count++;
+
+            if (debug->mdb_optimizations != 0)
+                count++;
+
+            if (debug->gdb != 0)
+                count++;
+
+            var names = new string[count];
+            var index = 0;
+
+            if (debug->better_cast_details != 0)
+                names[index++] = "casts";
+
+            if (debug->mdb_optimizations != 0)
+                names[index++] = "mdb-optimizations";
+
+            if (debug->gdb != 0)
+                names[index++] = "gdb";
 
             return names;
         }
