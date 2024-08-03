@@ -117,10 +117,9 @@ namespace JitInspector
         static MonoInterop()
         {
             using (var process = Process.GetCurrentProcess())
-            using (var module = process.MainModule)
             {
                 SymSetOptions(SYMOPT_EXACT_SYMBOLS);
-                SymInitialize(process.Handle, Path.GetDirectoryName(module.FileName), fInvadeProcess: true);
+                SymInitialize(process.Handle, Path.GetDirectoryName(process.MainModule.FileName), fInvadeProcess: true);
 
                 SYMBOL_INFOW info;
                 info.SizeOfStruct = (uint)sizeof(SYMBOL_INFOW);
