@@ -268,11 +268,11 @@ namespace JitInspector
             }
             else if (type.IsValueType)
             {
-                return ("#86c691");
+                return "#86c691";
             }
             else
             {
-                return ("#4ec9b0");
+                return "#4ec9b0";
             }
         }
 
