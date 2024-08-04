@@ -19,7 +19,7 @@ namespace JitInspector.UI
 {
     using static StringBuilderExtensions;
 
-    public class JitInspectorView : EditorWindow
+    internal sealed class JitInspectorView : EditorWindow
     {
         private static readonly StringBuilder s_syntaxBuilder = new StringBuilder();
         private static SearchableMethodIndex s_methodIndex = new SearchableMethodIndex();
