@@ -3,7 +3,7 @@ using System.Text;
 
 namespace JitInspector
 {
-    public static class StringBuilderExtensions
+    internal static class StringBuilderExtensions
     {
         public static StringBuilder AppendColored(this StringBuilder builder, string text, string color)
         {
