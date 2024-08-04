@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Packages/com.zombie.jit-inspector/Editor/UI/JitInspectorView.uss?fileID=7433441132597879392&amp;guid=696f467fb783c2949b46d3317ac69cf7&amp;type=3#JitInspectorView" />
+    <JitInspector.UI.SplitContainer thumb-width="4" class="grow">
+        <ui:VisualElement name="tree-container" class="overflow-hidden grow">
+            <uie:Toolbar>
+                <uie:ToolbarSearchField focusable="true" name="target-filter" class="grow" />
+            </uie:Toolbar>
+        </ui:VisualElement>
+        <ui:VisualElement name="source-container" style="flex-grow: 1;">
+            <uie:Toolbar>
+                <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="selected-item-name" class="selected-item-label" />
+            </uie:Toolbar>
+            <ui:ListView focusable="true" show-alternating-row-backgrounds="All" selection-type="None" show-bound-collection-size="false" name="jit-asm" virtualization-method="DynamicHeight" class="grow" />
+        </ui:VisualElement>
+    </JitInspector.UI.SplitContainer>
+</ui:UXML>
