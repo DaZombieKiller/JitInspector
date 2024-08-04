@@ -1,10 +1,13 @@
 using Iced.Intel;
+using JitInspector.Search;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -13,12 +16,15 @@ using Label = UnityEngine.UIElements.Label;
 
 namespace JitInspector.UI
 {
-    using static StringBuilderExtensions;
+    using static StringBuildingExtensions;
+
     public class JitInspectorView : EditorWindow
     {
-
+        private SearchableMethodIndex _methodIndex = new SearchableMethodIndex();
         private static HashSet<string> hashSet = new HashSet<string>();
         private static List<Assembly> _assemblies;
+
+        private readonly float _delay = 0.35f;
 
         [SerializeField]
         private VisualTreeAsset m_VisualTreeAsset = default;
@@ -26,9 +32,12 @@ namespace JitInspector.UI
         private VisualElement viewBase;
         private VirtualizedTreeView tree;
         private ToolbarSearchField searchField;
+        private Label statusLabel;
         private ListView jitAsmListView;
         private Label selectedItemName;
         private Button refreshButton;
+        private CancellationTokenSource _initCtes;
+        private CancellationTokenSource _searchCTS;
 
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
 
@@ -66,6 +75,8 @@ namespace JitInspector.UI
                 .ToList();
 
             SetupUI();
+
+            EditorApplication.delayCall += InitializeAsync;
         }
         private void SetupUI()
         {
@@ -74,6 +85,9 @@ namespace JitInspector.UI
             viewBase.Q<VisualElement>("tree-container").Add(tree);
 
             searchField = viewBase.Q<ToolbarSearchField>("target-filter");
+            searchField.RegisterValueChangedCallback(OnSearchChanged);
+            statusLabel = new Label("Building index...");
+
             jitAsmListView = viewBase.Q<ListView>("jit-asm");
             jitAsmListView.itemsSource = loadedSourceLines;
             jitAsmListView.makeItem = () =>
@@ -91,6 +105,14 @@ namespace JitInspector.UI
             tree.OnItemSelected += OnTreeItemSelected;
             tree.OnItemExpanded += OnTreeItemExpanded;
 
+            Refresh();
+        }
+        private async void InitializeAsync()
+        {
+            _initCtes = new CancellationTokenSource();
+            statusLabel.text = "Building index...";
+            await _methodIndex.BuildIndexAsync(_initCtes.Token);
+            statusLabel.text = "Index built successfully.";
             Refresh();
         }
         private void OnTreeItemSelected(TreeViewItem item)
@@ -123,6 +145,40 @@ namespace JitInspector.UI
                     item.Children = GetMethodItems(type);
                 }
                 tree.RefreshItem(item);
+            }
+        }
+        public void OnSearchChanged(ChangeEvent<string> evt)
+        {
+            RunSearchAsync(evt.newValue);
+        }
+        async void RunSearchAsync(string value)
+        {
+            _searchCTS?.Cancel();
+            _searchCTS = new CancellationTokenSource();
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(_delay), _searchCTS.Token);
+
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    Refresh();
+                }
+                else
+                {
+                    var searchResults = _methodIndex.Search(value)
+                        .GroupBy(m => m.Assembly)
+                        .Select(g => new TreeViewItem(g.Key.GetName().Name, g.Key, GetNamespaceItems(g), true, g.Key.GetName().Version.ToString()))
+                        .ToList();
+
+                    tree.SetItems(searchResults);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                throw;
             }
         }
         private void Refresh()
@@ -162,7 +218,7 @@ namespace JitInspector.UI
                 {
                     var mtvi = GetMethodItems(t);
 
-                    var qualifiers = "<color=#569cd6>" 
+                    var qualifiers = "<color=#569cd6>"
                                    + (t.IsAbstract ? "abstract " : string.Empty)
                                    + (t.IsValueType ? "struct " : "class ")
                                    + "</color>";
@@ -188,6 +244,28 @@ namespace JitInspector.UI
                 .ToList();
 
             return methods.Select(m => new TreeViewItem(GetMethodSignature(m), m)).ToList();
+        }
+        public List<TreeViewItem> GetNamespaceItems(IGrouping<Assembly, MethodIndex> assemblyGroup)
+        {
+            return assemblyGroup
+                .GroupBy(m => m.Namespace)
+                .Select(g => new TreeViewItem(g.Key, g.Key, GetTypeItems(g), true))
+                .ToList();
+        }
+
+        public List<TreeViewItem> GetTypeItems(IGrouping<string, MethodIndex> namespaceGroup)
+        {
+            return namespaceGroup
+                .GroupBy(m => m.DeclaringType)
+                .Select(g => new TreeViewItem(g.Key.Name, g.Key, GetMethodItems(g), true))
+                .ToList();
+        }
+
+        public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
+        {
+            return typeGroup
+                .Select(m => new TreeViewItem(GetMethodSignature(m.Method), m.Method))
+                .ToList();
         }
         private string GetMethodSignature(MethodInfo method)
         {
@@ -225,6 +303,29 @@ namespace JitInspector.UI
             using var text = new StringWriter();
             JitInspectorHelpers.WriteDisassembly(method, code, size, formatter, text);
             return text.ToString();
+        }
+        public async Task ApplyFilterAsync(string filter)
+        {
+            // Cancel any pending operation
+            _initCtes?.Cancel();
+            _initCtes = new CancellationTokenSource();
+
+            try
+            {
+                // Wait for the specified delay
+                await Task.Delay(TimeSpan.FromSeconds(_delay), _initCtes.Token);
+
+                // If we haven't been canceled, apply the filter
+                //tree.SetFilter(filter);
+            }
+            catch (TaskCanceledException)
+            {
+                // Task was canceled, do nothing
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error applying filter: {ex}");
+            }
         }
 
     }
