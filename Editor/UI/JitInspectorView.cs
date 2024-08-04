@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 using Label = UnityEngine.UIElements.Label;
 
@@ -20,11 +21,11 @@ namespace JitInspector.UI
 
     public class JitInspectorView : EditorWindow
     {
-        private SearchableMethodIndex _methodIndex = new SearchableMethodIndex();
-        private static HashSet<string> hashSet = new HashSet<string>();
-        private static List<Assembly> _assemblies;
+        private static SearchableMethodIndex s_methodIndex = new SearchableMethodIndex();
+        private static HashSet<string> s_hashSet = new HashSet<string>();
+        private static List<Assembly> s_assemblies;
 
-        private readonly float _delay = 0.35f;
+        private readonly float _delay = 0.45f;
 
         [SerializeField]
         private VisualTreeAsset m_VisualTreeAsset = default;
@@ -70,7 +71,7 @@ namespace JitInspector.UI
 
             rootVisualElement.Add(viewBase);
 
-            _assemblies = AppDomain.CurrentDomain.GetAssemblies()
+            s_assemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .OrderBy(asm => asm.FullName)
                 .ToList();
 
@@ -111,7 +112,7 @@ namespace JitInspector.UI
         {
             _initCtes = new CancellationTokenSource();
             statusLabel.text = "Building index...";
-            await _methodIndex.BuildIndexAsync(_initCtes.Token);
+            await s_methodIndex.BuildIndexAsync(_initCtes.Token);
             statusLabel.text = "Index built successfully.";
             Refresh();
         }
@@ -165,7 +166,7 @@ namespace JitInspector.UI
                 }
                 else
                 {
-                    var searchResults = _methodIndex.Search(value)
+                    var searchResults = s_methodIndex.Search(value)
                         .GroupBy(m => m.Assembly)
                         .Select(g => new TreeViewItem(g.Key.GetName().Name, g.Key, GetNamespaceItems(g), true, g.Key.GetName().Version.ToString()))
                         .ToList();
@@ -183,7 +184,7 @@ namespace JitInspector.UI
         }
         private void Refresh()
         {
-            var rootItems = _assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
+            var rootItems = s_assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
                 .Where(tvi => tvi.Children.Any())
                 .ToList();
             tree.SetItems(rootItems);
@@ -192,14 +193,14 @@ namespace JitInspector.UI
         {
             var clt = CacheLoadTypes(assembly);
             var data = new List<TreeViewItem>();
-            hashSet.Clear();
+            s_hashSet.Clear();
             for (int i = 0; i < clt.Length; i++)
             {
                 var type = clt[i];
                 if (string.IsNullOrEmpty(type.Namespace)) continue;
-                if (hashSet.Contains(type.Namespace))
+                if (s_hashSet.Contains(type.Namespace))
                     continue;
-                hashSet.Add(type.Namespace);
+                s_hashSet.Add(type.Namespace);
                 var name = type.Name;
                 data.Add(new TreeViewItem(type.Namespace, type.Namespace, null, true));
             }
@@ -208,7 +209,7 @@ namespace JitInspector.UI
         }
         private List<TreeViewItem> GetTypeItems(string @namespace)
         {
-            var allTypes = _assemblies.SelectMany(CacheLoadTypes);
+            var allTypes = s_assemblies.SelectMany(CacheLoadTypes);
             var types = allTypes
                 .Where(t => t.Namespace == @namespace)
                 .OrderBy(t => t.Name)
