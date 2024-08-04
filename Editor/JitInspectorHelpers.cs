@@ -28,6 +28,7 @@ namespace JitInspector
             s_syntaxBuilder.AppendColored(")", "#efb839");
             return s_syntaxBuilder.ToString();
         }
+
         public static unsafe bool TryGetJitCode(RuntimeMethodHandle handle, out void* code, out int size)
         {
             var fp = (void*)handle.GetFunctionPointer();

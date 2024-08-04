@@ -10,6 +10,9 @@ namespace JitInspector.UI
     {
         public new class UxmlFactory : UxmlFactory<VirtualizedTreeView, UxmlTraits> { }
 
+        private const string expanded = "▼ ";
+        private const string collapsed = "▶ ";
+
         private List<TreeViewItem> _items = new List<TreeViewItem>();
         private List<TreeViewItem> _flattenedItems = new List<TreeViewItem>();
         private VisualElement _contentContainer;
@@ -125,7 +128,6 @@ namespace JitInspector.UI
             }
         }
 
-
         private VisualElement GetOrCreateItemElement()
         {
             if (_itemPool.Count > 0)
@@ -146,8 +148,7 @@ namespace JitInspector.UI
             itemElement.Add(extraDataLabel);
             return itemElement;
         }
-        private const string expanded = "▼ ";
-        private const string collapsed = "▶ ";
+
         private void UpdateItemElement(VisualElement itemElement, TreeViewItem item, int index)
         {
             var button = itemElement as Button;
@@ -166,6 +167,7 @@ namespace JitInspector.UI
             var extraDataLabel = itemElement.Q<Label>("tree-item-extra-data");
             extraDataLabel.text = item.ExtraData;
         }
+
         private void RecycleItem(VisualElement itemElement)
         {
             _contentContainer.Remove(itemElement);

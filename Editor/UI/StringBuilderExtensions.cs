@@ -9,6 +9,7 @@ namespace JitInspector
         {
             return builder.Append("<color=").Append(color).Append(">").Append(text).Append("</color>");
         }
+
         public static StringBuilder AppendTypeName(this StringBuilder stringBuilder, Type type)
         {
             return stringBuilder.AppendColored(JitInspectorHelpers.GetTypeName(type), JitInspectorHelpers.GetHighlightColor(type));

@@ -51,6 +51,7 @@ namespace JitInspector.UI
                 return rtle.Types;
             }
         }
+
         [MenuItem("Window/JIT Inspector View", isValidateFunction: false, priority: 8)]
         public static void ShowExample()
         {
@@ -74,6 +75,7 @@ namespace JitInspector.UI
             SetupUI();
             _ = InitializeAsync();
         }
+
         private void SetupUI()
         {
             _tree = new VirtualizedTreeView();
@@ -103,6 +105,7 @@ namespace JitInspector.UI
 
             Refresh();
         }
+
         private async Task InitializeAsync()
         {
             _initCtes = new CancellationTokenSource();
@@ -113,6 +116,7 @@ namespace JitInspector.UI
             _statusLabel.text = string.Empty;
             Refresh();
         }
+
         private void OnTreeItemSelected(TreeViewItem item)
         {
             if (item.Data is not MethodInfo method)
@@ -130,6 +134,7 @@ namespace JitInspector.UI
             _jitAsmListView.Rebuild();
             _jitAsmListView.ScrollToItem(0);
         }
+
         private void OnTreeItemExpanded(TreeViewItem item)
         {
             if (item.Children == null)
@@ -149,10 +154,12 @@ namespace JitInspector.UI
                 _tree.RefreshItem(item);
             }
         }
+
         public void OnSearchChanged(ChangeEvent<string> evt)
         {
             _ = RunSearchAsync(evt.newValue);
         }
+
         private async Task RunSearchAsync(string value)
         {
             _searchCTS?.Cancel();
@@ -183,6 +190,7 @@ namespace JitInspector.UI
                 throw;
             }
         }
+
         private void Refresh()
         {
             var rootItems = s_assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
@@ -190,6 +198,7 @@ namespace JitInspector.UI
                 .ToList();
             _tree.SetItems(rootItems);
         }
+
         private List<TreeViewItem> GetFullNameItems(Assembly assembly)
         {
             var clt = CacheLoadTypes(assembly);
@@ -208,6 +217,7 @@ namespace JitInspector.UI
 
             return data;
         }
+
         private List<TreeViewItem> GetTypeItems(string @namespace)
         {
             var allTypes = s_assemblies.SelectMany(CacheLoadTypes);
@@ -231,6 +241,7 @@ namespace JitInspector.UI
                 .Where(tvi => tvi.Children.Count > 0)
                 .ToList();
         }
+
         private Type[] CacheLoadTypes(Assembly assembly)
         {
             if (!_assemblyTypes.ContainsKey(assembly))
@@ -238,6 +249,7 @@ namespace JitInspector.UI
 
             return _assemblyTypes[assembly];
         }
+
         private List<TreeViewItem> GetMethodItems(Type type)
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -259,6 +271,7 @@ namespace JitInspector.UI
                 .Select(g => new TreeViewItem(g.Key, g.Key, GetTypeItems(g), true))
                 .ToList();
         }
+
         public List<TreeViewItem> GetTypeItems(IGrouping<string, MethodIndex> namespaceGroup)
         {
             return namespaceGroup
@@ -266,12 +279,14 @@ namespace JitInspector.UI
                 .Select(g => new TreeViewItem(g.Key.Name, g.Key, GetMethodItems(g), true))
                 .ToList();
         }
+
         public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
         {
             return typeGroup
                 .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, s_syntaxBuilder), m.Method))
                 .ToList();
         }
+
         private static unsafe string GetDisassembly(MethodBase method)
         {
             if (!JitInspectorHelpers.TryGetJitCode(method, out var code, out var size))
@@ -285,6 +300,7 @@ namespace JitInspector.UI
                 }
             });
         }
+
         private static unsafe string GetDisassembly(MethodBase method, byte* code, int size, Formatter formatter)
         {
             using var text = new StringWriter();

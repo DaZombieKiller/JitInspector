@@ -39,6 +39,8 @@ namespace JitInspector.UI
         private VisualElement _firstElement;
         private VisualElement _secondElement;
         private VisualElement _thumb;
+        private Vector2 _StartPointerPosition;
+        private Vector2 _StartThumbPosition;
 
         public SplitContainer()
         {
@@ -125,13 +127,10 @@ namespace JitInspector.UI
             UpdateLayout();
         }
 
-        private Vector2 m_StartPointerPosition;
-        private Vector2 m_StartThumbPosition;
-
         private void OnThumbPointerDown(PointerDownEvent evt)
         {
-            m_StartPointerPosition = evt.position;
-            m_StartThumbPosition = _thumb.layout.position;
+            _StartPointerPosition = evt.position;
+            _StartThumbPosition = _thumb.layout.position;
             _thumb.CapturePointer(evt.pointerId);
             evt.StopPropagation();
         }
@@ -142,14 +141,14 @@ namespace JitInspector.UI
 
             Vector2 pointerPosition = evt.position;
             Vector2 localPointerPosition = _thumb.WorldToLocal(pointerPosition);
-            Vector2 delta = localPointerPosition - _thumb.WorldToLocal(m_StartPointerPosition);
+            Vector2 delta = localPointerPosition - _thumb.WorldToLocal(_StartPointerPosition);
 
             bool isHorizontal = Orientation == FlexDirection.Row;
 
             float containerSize = isHorizontal ? layout.width : layout.height;
             float newPosition = isHorizontal
-                ? Mathf.Clamp(m_StartThumbPosition.x + delta.x, 0, containerSize - _thumbWidth)
-                : Mathf.Clamp(m_StartThumbPosition.y + delta.y, 0, containerSize - _thumbWidth);
+                ? Mathf.Clamp(_StartThumbPosition.x + delta.x, 0, containerSize - _thumbWidth)
+                : Mathf.Clamp(_StartThumbPosition.y + delta.y, 0, containerSize - _thumbWidth);
 
             float firstElementSize = newPosition;
             float secondElementSize = containerSize - firstElementSize - _thumbWidth;
