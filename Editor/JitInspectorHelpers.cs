@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Iced.Intel;
 using static JitInspector.MonoInterop;
 
@@ -225,6 +227,25 @@ namespace JitInspector
             "unsafe",
             "alias-analysis",
             "aggressive-inlining"
+        };
+
+        public static string GetTypeName(Type type) => SpecialTypeNames.ContainsKey(type) ? SpecialTypeNames[type] : type.Name;
+        public static string GetHighlightColor(Type type) => SpecialTypeNames.ContainsKey(type) 
+                                                           ? (type.IsValueType ? "#86c691" : "#4ec9b0")
+                                                           : "#569cd6";
+        private static readonly IReadOnlyDictionary<Type, string> SpecialTypeNames = new Dictionary<Type, string>()
+        {
+            { typeof(void)    , "void"   },
+            { typeof(Single)  , "float"  },
+            { typeof(Double)  , "double" },
+            { typeof(Int16)   , "short"  },
+            { typeof(Int32)   , "int"    },
+            { typeof(Int64)   , "long"   },
+            { typeof(UInt16)  , "ushort" },
+            { typeof(UInt32)  , "uint"   },
+            { typeof(UInt64)  , "ulong"  },
+            { typeof(Boolean) , "bool"   },
+            { typeof(String)  , "string" },
         };
     }
 }

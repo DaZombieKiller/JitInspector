@@ -17,10 +17,11 @@ using Label = UnityEngine.UIElements.Label;
 
 namespace JitInspector.UI
 {
-    using static StringBuildingExtensions;
+    using static StringBuilderExtensions;
 
     public class JitInspectorView : EditorWindow
     {
+        private static readonly StringBuilder s_syntaxBuilder = new StringBuilder();
         private static SearchableMethodIndex s_methodIndex = new SearchableMethodIndex();
         private static HashSet<string> s_hashSet = new HashSet<string>();
         private static List<Assembly> s_assemblies;
@@ -118,7 +119,9 @@ namespace JitInspector.UI
             if (item.Data is not MethodInfo method)
                 return;
 
-            _selectedItemName.text = $"{HighlightTypeName(method.DeclaringType)} {{ {GetMethodSignature(method)} }}";
+            s_syntaxBuilder.Clear();
+            s_syntaxBuilder.AppendColored(method.DeclaringType.Name, JitInspectorHelpers.GetHighlightColor(method.DeclaringType));
+            _selectedItemName.text = $"{s_syntaxBuilder.ToString()} {{ {GetMethodSignature(method)} }}";
             _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
@@ -215,12 +218,12 @@ namespace JitInspector.UI
             return types.Select(t =>
                 {
                     var mtvi = GetMethodItems(t);
-
-                    var qualifiers = "<color=#569cd6>"
-                                   + (t.IsAbstract ? "abstract " : string.Empty)
-                                   + (t.IsValueType ? "struct " : "class ")
-                                   + "</color>";
-                    var name = qualifiers + HighlightTypeName(t);
+                    s_syntaxBuilder.Clear();
+                    s_syntaxBuilder.AppendColored(color: "#569cd6",
+                               text: (t.IsAbstract ? "abstract " : string.Empty)
+                                   + (t.IsValueType ? "struct " : "class "));
+                    s_syntaxBuilder.AppendColored(t.Name, JitInspectorHelpers.GetHighlightColor(t));
+                    var name = s_syntaxBuilder.ToString();
                     TreeViewItem treeViewItem = new TreeViewItem(name, t, mtvi, mtvi.Count > 0);
                     return treeViewItem;
                 })
@@ -267,21 +270,21 @@ namespace JitInspector.UI
 
         private string GetMethodSignature(MethodInfo method)
         {
-            var sb = new StringBuilder();
-            sb.AppendTypeName(method.ReturnType);
-            sb.Append(" ");
-            sb.AppendColored(method.Name, "#dcdcaa");
-            sb.AppendColored("(", "#efb839");
+            s_syntaxBuilder.Clear();
+            s_syntaxBuilder.AppendTypeName(method.ReturnType);
+            s_syntaxBuilder.Append(" ");
+            s_syntaxBuilder.AppendColored(method.Name, "#dcdcaa");
+            s_syntaxBuilder.AppendColored("(", "#efb839");
             var parameters = method.GetParameters();
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (i > 0) sb.Append(", ");
-                sb.AppendTypeName(parameters[i].ParameterType);
-                sb.Append(" ");
-                sb.Append(parameters[i].Name);
+                if (i > 0) s_syntaxBuilder.Append(", ");
+                s_syntaxBuilder.AppendTypeName(parameters[i].ParameterType);
+                s_syntaxBuilder.Append(" ");
+                s_syntaxBuilder.Append(parameters[i].Name);
             }
-            sb.AppendColored(")", "#efb839");
-            return sb.ToString();
+            s_syntaxBuilder.AppendColored(")", "#efb839");
+            return s_syntaxBuilder.ToString();
         }
         private static unsafe string GetDisassembly(MethodBase method)
         {
