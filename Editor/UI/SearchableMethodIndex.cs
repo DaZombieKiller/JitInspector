@@ -37,7 +37,7 @@ namespace JitInspector.Search
                         {
                             if (cancellationToken.IsCancellationRequested) return;
 
-                            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                            var methods = type.GetMethods(JitInspectorHelpers.DeclaredMembers)
                                 .Where(m => !m.IsGenericMethod && m.GetMethodBody() != null && !m.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall));
 
                             foreach (var method in methods)

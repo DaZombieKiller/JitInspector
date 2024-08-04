@@ -10,7 +10,9 @@ namespace JitInspector
 {
     internal static unsafe class JitInspectorHelpers
     {
-        public static bool IsSupportedForJitInspection(MethodInfo method)
+        public const BindingFlags DeclaredMembers = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+        public static bool IsSupportedForJitInspection(MethodBase method)
         {
             if (method.IsGenericMethod)
                 return false;
@@ -21,14 +23,14 @@ namespace JitInspector
             return method.GetMethodBody() != null;
         }
 
-        public static string GetMethodSignature(MethodInfo method, bool includeParamNames)
+        public static string GetMethodSignature(MethodBase method, bool includeParamNames)
         {
             var builder = new StringBuilder();
             AppendMethodSignature(method, builder, includeParamNames);
             return builder.ToString();
         }
 
-        public static void AppendMethodSignature(MethodInfo method, StringBuilder builder, bool includeParamNames)
+        public static void AppendMethodSignature(MethodBase method, StringBuilder builder, bool includeParamNames)
         {
             if (method.DeclaringType is Type declaringType)
             {
@@ -56,8 +58,11 @@ namespace JitInspector
 
             builder.AppendColored(")", "#efb839");
 
-            builder.Append(':');
-            builder.AppendTypeName(method.ReturnType);
+            if (method is MethodInfo info)
+            {
+                builder.Append(':');
+                builder.AppendTypeName(info.ReturnType);
+            }
 
             if (method.CallingConvention.HasFlag(CallingConventions.HasThis)
                 && !method.CallingConvention.HasFlag(CallingConventions.ExplicitThis))

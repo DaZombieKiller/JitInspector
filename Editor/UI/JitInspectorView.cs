@@ -106,7 +106,7 @@ namespace JitInspector.UI
 
         private void OnTreeItemSelected(TreeViewItem item)
         {
-            if (item.Data is not MethodInfo method)
+            if (item.Data is not MethodBase method)
                 return;
 
             s_syntaxBuilder.Clear();
@@ -240,12 +240,14 @@ namespace JitInspector.UI
 
         private List<TreeViewItem> GetMethodItems(Type type)
         {
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(m => JitInspectorHelpers.IsSupportedForJitInspection(m))
+            var methods = type.GetMethods(JitInspectorHelpers.DeclaredMembers);
+            var constructors = type.GetConstructors(JitInspectorHelpers.DeclaredMembers);
+            var targets = Enumerable.Concat<MethodBase>(methods, constructors)
+                .Where(JitInspectorHelpers.IsSupportedForJitInspection)
                 .OrderBy(m => m.Name)
                 .ToList();
 
-            return methods.Select(m =>
+            return targets.Select(m =>
             {
                 s_syntaxBuilder.Clear();
                 JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true);
