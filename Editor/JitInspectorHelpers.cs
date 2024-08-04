@@ -4,11 +4,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using static JitInspector.MonoInterop;
+using StringBuilder = System.Text.StringBuilder;
 
 namespace JitInspector
 {
     internal static unsafe class JitInspectorHelpers
     {
+        public static string GetMethodSignature(MethodInfo method, StringBuilder s_syntaxBuilder = null)
+        {
+            s_syntaxBuilder ??= new StringBuilder();
+            s_syntaxBuilder.AppendTypeName(method.ReturnType);
+            s_syntaxBuilder.Append(" ");
+            s_syntaxBuilder.AppendColored(method.Name, "#dcdcaa");
+            s_syntaxBuilder.AppendColored("(", "#efb839");
+            var parameters = method.GetParameters();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (i > 0) s_syntaxBuilder.Append(", ");
+                s_syntaxBuilder.AppendTypeName(parameters[i].ParameterType);
+                s_syntaxBuilder.Append(" ");
+                s_syntaxBuilder.Append(parameters[i].Name);
+            }
+            s_syntaxBuilder.AppendColored(")", "#efb839");
+            return s_syntaxBuilder.ToString();
+        }
         public static unsafe bool TryGetJitCode(RuntimeMethodHandle handle, out void* code, out int size)
         {
             var fp = (void*)handle.GetFunctionPointer();

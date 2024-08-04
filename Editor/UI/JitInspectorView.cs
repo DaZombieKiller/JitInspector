@@ -121,7 +121,9 @@ namespace JitInspector.UI
 
             s_syntaxBuilder.Clear();
             s_syntaxBuilder.AppendColored(method.DeclaringType.Name, JitInspectorHelpers.GetHighlightColor(method.DeclaringType));
-            _selectedItemName.text = $"{s_syntaxBuilder.ToString()} {{ {GetMethodSignature(method)} }}";
+            var typeString = s_syntaxBuilder.ToString();
+            s_syntaxBuilder.Clear();
+            _selectedItemName.text = $"{typeString} {{ {JitInspectorHelpers.GetMethodSignature(method, s_syntaxBuilder)} }}";
             _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
@@ -244,7 +246,11 @@ namespace JitInspector.UI
                 .OrderBy(m => m.Name)
                 .ToList();
 
-            return methods.Select(m => new TreeViewItem(GetMethodSignature(m), m)).ToList();
+            return methods.Select(m =>
+            {
+                s_syntaxBuilder.Clear();
+                return new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m, s_syntaxBuilder), m);
+            }).ToList();
         }
 
         public List<TreeViewItem> GetNamespaceItems(IGrouping<Assembly, MethodIndex> assemblyGroup)
@@ -264,27 +270,8 @@ namespace JitInspector.UI
         public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
         {
             return typeGroup
-                .Select(m => new TreeViewItem(GetMethodSignature(m.Method), m.Method))
+                .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, s_syntaxBuilder), m.Method))
                 .ToList();
-        }
-
-        private string GetMethodSignature(MethodInfo method)
-        {
-            s_syntaxBuilder.Clear();
-            s_syntaxBuilder.AppendTypeName(method.ReturnType);
-            s_syntaxBuilder.Append(" ");
-            s_syntaxBuilder.AppendColored(method.Name, "#dcdcaa");
-            s_syntaxBuilder.AppendColored("(", "#efb839");
-            var parameters = method.GetParameters();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (i > 0) s_syntaxBuilder.Append(", ");
-                s_syntaxBuilder.AppendTypeName(parameters[i].ParameterType);
-                s_syntaxBuilder.Append(" ");
-                s_syntaxBuilder.Append(parameters[i].Name);
-            }
-            s_syntaxBuilder.AppendColored(")", "#efb839");
-            return s_syntaxBuilder.ToString();
         }
         private static unsafe string GetDisassembly(MethodBase method)
         {
