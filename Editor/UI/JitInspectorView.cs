@@ -16,8 +16,6 @@ using Label = UnityEngine.UIElements.Label;
 
 namespace JitInspector.UI
 {
-    using static StringBuilderExtensions;
-
     internal sealed class JitInspectorView : EditorWindow
     {
         private static readonly StringBuilder s_syntaxBuilder = new StringBuilder();
