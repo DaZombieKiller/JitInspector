@@ -246,6 +246,7 @@ namespace JitInspector.UI
 
             return methods.Select(m => new TreeViewItem(GetMethodSignature(m), m)).ToList();
         }
+
         public List<TreeViewItem> GetNamespaceItems(IGrouping<Assembly, MethodIndex> assemblyGroup)
         {
             return assemblyGroup
@@ -253,7 +254,6 @@ namespace JitInspector.UI
                 .Select(g => new TreeViewItem(g.Key, g.Key, GetTypeItems(g), true))
                 .ToList();
         }
-
         public List<TreeViewItem> GetTypeItems(IGrouping<string, MethodIndex> namespaceGroup)
         {
             return namespaceGroup
@@ -261,13 +261,13 @@ namespace JitInspector.UI
                 .Select(g => new TreeViewItem(g.Key.Name, g.Key, GetMethodItems(g), true))
                 .ToList();
         }
-
         public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
         {
             return typeGroup
                 .Select(m => new TreeViewItem(GetMethodSignature(m.Method), m.Method))
                 .ToList();
         }
+
         private string GetMethodSignature(MethodInfo method)
         {
             var sb = new StringBuilder();
