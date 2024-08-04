@@ -22,7 +22,7 @@ namespace JitInspector.UI
                 base.Init(ve, bag, cc);
                 var splitContainer = ve as SplitContainer;
                 splitContainer.Orientation = m_Orientation.GetValueFromBag(bag, cc);
-                splitContainer.ThumbWidth = m_ThumbWidth.GetValueFromBag(bag, cc);
+                splitContainer._thumbWidth = m_ThumbWidth.GetValueFromBag(bag, cc);
             }
         }
 
@@ -36,10 +36,10 @@ namespace JitInspector.UI
             }
         }
 
-        private float ThumbWidth = 10f;
-        private VisualElement m_FirstElement;
-        private VisualElement m_SecondElement;
-        private VisualElement m_Thumb;
+        private float _thumbWidth = 10f;
+        private VisualElement _firstElement;
+        private VisualElement _secondElement;
+        private VisualElement _thumb;
 
         public SplitContainer()
         {
@@ -51,21 +51,21 @@ namespace JitInspector.UI
             style.flexGrow = 1;
             style.flexDirection = FlexDirection.Row;
 
-            m_FirstElement = new VisualElement { name = "first-element" };
-            m_SecondElement = new VisualElement { name = "second-element" };
-            m_Thumb = new VisualElement { name = "thumb" };
+            _firstElement = new VisualElement { name = "first-element" };
+            _secondElement = new VisualElement { name = "second-element" };
+            _thumb = new VisualElement { name = "thumb" };
 
-            m_FirstElement.style.flexGrow = 1;
-            m_SecondElement.style.flexGrow = 1;
-            m_FirstElement.style.overflow = Overflow.Hidden;
-            m_SecondElement.style.overflow = Overflow.Hidden;
+            _firstElement.style.flexGrow = 1;
+            _secondElement.style.flexGrow = 1;
+            _firstElement.style.overflow = Overflow.Hidden;
+            _secondElement.style.overflow = Overflow.Hidden;
 
-            m_Thumb.style.width = ThumbWidth;
-            m_Thumb.style.backgroundColor = Color.gray;
+            _thumb.style.width = _thumbWidth;
+            _thumb.style.backgroundColor = Color.gray;
 
-            m_Thumb.RegisterCallback<PointerDownEvent>(OnThumbPointerDown);
-            m_Thumb.RegisterCallback<PointerMoveEvent>(OnThumbPointerMove);
-            m_Thumb.RegisterCallback<PointerUpEvent>(OnThumbPointerUp);
+            _thumb.RegisterCallback<PointerDownEvent>(OnThumbPointerDown);
+            _thumb.RegisterCallback<PointerMoveEvent>(OnThumbPointerMove);
+            _thumb.RegisterCallback<PointerUpEvent>(OnThumbPointerUp);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -81,8 +81,8 @@ namespace JitInspector.UI
             List<VisualElement> childrenToProcess = new List<VisualElement>();
             foreach (var child in Children())
             {
-                if (m_FirstElement == child) continue;
-                if (m_SecondElement == child) continue;
+                if (_firstElement == child) continue;
+                if (_secondElement == child) continue;
                 childrenToProcess.Add(child);
             }
 
@@ -90,18 +90,18 @@ namespace JitInspector.UI
 
             if (childrenToProcess.Count >= 2)
             {
-                m_FirstElement.Add(childrenToProcess[0]);
-                m_SecondElement.Add(childrenToProcess[1]);
+                _firstElement.Add(childrenToProcess[0]);
+                _secondElement.Add(childrenToProcess[1]);
             }
             else if (childrenToProcess.Count == 1)
             {
-                m_FirstElement.Add(childrenToProcess[0]);
+                _firstElement.Add(childrenToProcess[0]);
             }
 
             // Re-add the elements in the correct order
-            hierarchy.Add(m_FirstElement);
-            hierarchy.Add(m_Thumb);
-            hierarchy.Add(m_SecondElement);
+            hierarchy.Add(_firstElement);
+            hierarchy.Add(_thumb);
+            hierarchy.Add(_secondElement);
 
             UpdateLayout();
         }
@@ -110,15 +110,15 @@ namespace JitInspector.UI
         {
             bool isHorizontal = Orientation == FlexDirection.Row;
 
-            m_Thumb.style.width = isHorizontal ? ThumbWidth : Length.Percent(100);
-            m_Thumb.style.height = isHorizontal ? Length.Percent(100) : ThumbWidth;
-            SetCursor(m_Thumb, isHorizontal ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical);
+            _thumb.style.width = isHorizontal ? _thumbWidth : Length.Percent(100);
+            _thumb.style.height = isHorizontal ? Length.Percent(100) : _thumbWidth;
+            SetCursor(_thumb, isHorizontal ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical);
 
-            m_FirstElement.style.width = isHorizontal ? Length.Percent(50) : Length.Percent(100);
-            m_FirstElement.style.height = isHorizontal ? Length.Percent(100) : Length.Percent(50);
+            _firstElement.style.width = isHorizontal ? Length.Percent(50) : Length.Percent(100);
+            _firstElement.style.height = isHorizontal ? Length.Percent(100) : Length.Percent(50);
 
-            m_SecondElement.style.width = isHorizontal ? Length.Percent(50) : Length.Percent(100);
-            m_SecondElement.style.height = isHorizontal ? Length.Percent(100) : Length.Percent(50);
+            _secondElement.style.width = isHorizontal ? Length.Percent(50) : Length.Percent(100);
+            _secondElement.style.height = isHorizontal ? Length.Percent(100) : Length.Percent(50);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -132,41 +132,41 @@ namespace JitInspector.UI
         private void OnThumbPointerDown(PointerDownEvent evt)
         {
             m_StartPointerPosition = evt.position;
-            m_StartThumbPosition = m_Thumb.layout.position;
-            m_Thumb.CapturePointer(evt.pointerId);
+            m_StartThumbPosition = _thumb.layout.position;
+            _thumb.CapturePointer(evt.pointerId);
             evt.StopPropagation();
         }
 
         private void OnThumbPointerMove(PointerMoveEvent evt)
         {
-            if (!m_Thumb.HasPointerCapture(evt.pointerId)) return;
+            if (!_thumb.HasPointerCapture(evt.pointerId)) return;
 
             Vector2 pointerPosition = evt.position;
-            Vector2 localPointerPosition = m_Thumb.WorldToLocal(pointerPosition);
-            Vector2 delta = localPointerPosition - m_Thumb.WorldToLocal(m_StartPointerPosition);
+            Vector2 localPointerPosition = _thumb.WorldToLocal(pointerPosition);
+            Vector2 delta = localPointerPosition - _thumb.WorldToLocal(m_StartPointerPosition);
 
             bool isHorizontal = Orientation == FlexDirection.Row;
 
             float containerSize = isHorizontal ? layout.width : layout.height;
             float newPosition = isHorizontal
-                ? Mathf.Clamp(m_StartThumbPosition.x + delta.x, 0, containerSize - ThumbWidth)
-                : Mathf.Clamp(m_StartThumbPosition.y + delta.y, 0, containerSize - ThumbWidth);
+                ? Mathf.Clamp(m_StartThumbPosition.x + delta.x, 0, containerSize - _thumbWidth)
+                : Mathf.Clamp(m_StartThumbPosition.y + delta.y, 0, containerSize - _thumbWidth);
 
             float firstElementSize = newPosition;
-            float secondElementSize = containerSize - firstElementSize - ThumbWidth;
+            float secondElementSize = containerSize - firstElementSize - _thumbWidth;
 
             float firstPercentage = firstElementSize / containerSize * 100;
             float secondPercentage = secondElementSize / containerSize * 100;
 
             if (isHorizontal)
             {
-                m_FirstElement.style.width = Length.Percent(firstPercentage);
-                m_SecondElement.style.width = Length.Percent(secondPercentage);
+                _firstElement.style.width = Length.Percent(firstPercentage);
+                _secondElement.style.width = Length.Percent(secondPercentage);
             }
             else
             {
-                m_FirstElement.style.height = Length.Percent(firstPercentage);
-                m_SecondElement.style.height = Length.Percent(secondPercentage);
+                _firstElement.style.height = Length.Percent(firstPercentage);
+                _secondElement.style.height = Length.Percent(secondPercentage);
             }
 
             evt.StopPropagation();
@@ -174,20 +174,20 @@ namespace JitInspector.UI
 
         private void OnThumbPointerUp(PointerUpEvent evt)
         {
-            m_Thumb.ReleasePointer(evt.pointerId);
+            _thumb.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
         }
 
         public void SetFirstElement(VisualElement element)
         {
-            m_FirstElement.Clear();
-            m_FirstElement.Add(element);
+            _firstElement.Clear();
+            _firstElement.Add(element);
         }
 
         public void SetSecondElement(VisualElement element)
         {
-            m_SecondElement.Clear();
-            m_SecondElement.Add(element);
+            _secondElement.Clear();
+            _secondElement.Add(element);
         }
 
         public static void SetCursor(VisualElement element, MouseCursor cursor)

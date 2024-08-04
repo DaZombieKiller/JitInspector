@@ -28,21 +28,18 @@ namespace JitInspector.UI
         private readonly float _delay = 0.45f;
 
         [SerializeField]
-        private VisualTreeAsset jitInspectorTemplateAsset = default;
-
-        private VisualElement viewBase;
-        private VirtualizedTreeView tree;
-        private ToolbarSearchField searchField;
-        private Label statusLabel;
-        private ListView jitAsmListView;
-        private Label selectedItemName;
-        private Button refreshButton;
+        private VisualTreeAsset _jitInspectorTemplateAsset = default;
+        private VisualElement _viewBase;
+        private VirtualizedTreeView _tree;
+        private ToolbarSearchField _searchField;
+        private Label _statusLabel;
+        private ListView _jitAsmListView;
+        private Label _selectedItemName;
+        private Button _refreshButton;
         private CancellationTokenSource _initCtes;
         private CancellationTokenSource _searchCTS;
-
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
-
-        private List<string> loadedSourceLines = new List<string>();
+        private List<string> _loadedSourceLines = new List<string>();
 
         public static IEnumerable<Type> SafeTypeLoad(Assembly asm)
         {
@@ -64,12 +61,12 @@ namespace JitInspector.UI
 
         public void CreateGUI()
         {
-            TemplateContainer templateContainer = jitInspectorTemplateAsset.Instantiate();
-            viewBase = templateContainer.Children().First();
+            TemplateContainer templateContainer = _jitInspectorTemplateAsset.Instantiate();
+            _viewBase = templateContainer.Children().First();
             for (int i = 0; i < templateContainer.styleSheets.count; i++)
-                viewBase.styleSheets.Add(templateContainer.styleSheets[i]);
+                _viewBase.styleSheets.Add(templateContainer.styleSheets[i]);
 
-            rootVisualElement.Add(viewBase);
+            rootVisualElement.Add(_viewBase);
 
             s_assemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .OrderBy(asm => asm.FullName)
@@ -81,39 +78,39 @@ namespace JitInspector.UI
         }
         private void SetupUI()
         {
-            tree = new VirtualizedTreeView();
-            tree.style.flexGrow = 1;
-            viewBase.Q<VisualElement>("tree-container").Add(tree);
+            _tree = new VirtualizedTreeView();
+            _tree.style.flexGrow = 1;
+            _viewBase.Q<VisualElement>("tree-container").Add(_tree);
 
-            searchField = viewBase.Q<ToolbarSearchField>("target-filter");
-            searchField.RegisterValueChangedCallback(OnSearchChanged);
-            statusLabel = new Label("Building index...");
+            _searchField = _viewBase.Q<ToolbarSearchField>("target-filter");
+            _searchField.RegisterValueChangedCallback(OnSearchChanged);
+            _statusLabel = new Label("Building index...");
 
-            jitAsmListView = viewBase.Q<ListView>("jit-asm");
-            jitAsmListView.itemsSource = loadedSourceLines;
-            jitAsmListView.makeItem = () =>
+            _jitAsmListView = _viewBase.Q<ListView>("jit-asm");
+            _jitAsmListView.itemsSource = _loadedSourceLines;
+            _jitAsmListView.makeItem = () =>
             {
                 Label label = new Label() { enableRichText = true };
                 label.AddToClassList("monospace");
                 return label;
             };
-            jitAsmListView.bindItem = (ve, i) => ((Label)ve).text = loadedSourceLines[i];
-            jitAsmListView.Rebuild();
-            jitAsmListView.ScrollToItem(0);
+            _jitAsmListView.bindItem = (ve, i) => ((Label)ve).text = _loadedSourceLines[i];
+            _jitAsmListView.Rebuild();
+            _jitAsmListView.ScrollToItem(0);
 
-            selectedItemName = viewBase.Q<Label>("selected-item-name");
+            _selectedItemName = _viewBase.Q<Label>("selected-item-name");
 
-            tree.OnItemSelected += OnTreeItemSelected;
-            tree.OnItemExpanded += OnTreeItemExpanded;
+            _tree.OnItemSelected += OnTreeItemSelected;
+            _tree.OnItemExpanded += OnTreeItemExpanded;
 
             Refresh();
         }
         private async void InitializeAsync()
         {
             _initCtes = new CancellationTokenSource();
-            statusLabel.text = "Building index...";
+            _statusLabel.text = "Building index...";
             await s_methodIndex.BuildIndexAsync(_initCtes.Token);
-            statusLabel.text = "Index built successfully.";
+            _statusLabel.text = "Index built successfully.";
             Refresh();
         }
         private void OnTreeItemSelected(TreeViewItem item)
@@ -121,13 +118,13 @@ namespace JitInspector.UI
             if (item.Data is not MethodInfo method)
                 return;
 
-            selectedItemName.text = $"{HighlightTypeName(method.DeclaringType)} {{ {GetMethodSignature(method)} }}";
-            loadedSourceLines.Clear();
+            _selectedItemName.text = $"{HighlightTypeName(method.DeclaringType)} {{ {GetMethodSignature(method)} }}";
+            _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
-            loadedSourceLines.AddRange(lines);
-            jitAsmListView.Rebuild();
-            jitAsmListView.ScrollToItem(0);
+            _loadedSourceLines.AddRange(lines);
+            _jitAsmListView.Rebuild();
+            _jitAsmListView.ScrollToItem(0);
         }
         private void OnTreeItemExpanded(TreeViewItem item)
         {
@@ -145,7 +142,7 @@ namespace JitInspector.UI
                 {
                     item.Children = GetMethodItems(type);
                 }
-                tree.RefreshItem(item);
+                _tree.RefreshItem(item);
             }
         }
         public void OnSearchChanged(ChangeEvent<string> evt)
@@ -171,7 +168,7 @@ namespace JitInspector.UI
                         .Select(g => new TreeViewItem(g.Key.GetName().Name, g.Key, GetNamespaceItems(g), true, g.Key.GetName().Version.ToString()))
                         .ToList();
 
-                    tree.SetItems(searchResults);
+                    _tree.SetItems(searchResults);
                 }
             }
             catch (TaskCanceledException)
@@ -187,7 +184,7 @@ namespace JitInspector.UI
             var rootItems = s_assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
                 .Where(tvi => tvi.Children.Any())
                 .ToList();
-            tree.SetItems(rootItems);
+            _tree.SetItems(rootItems);
         }
         private List<TreeViewItem> GetFullNameItems(Assembly assembly)
         {
