@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JitInspector.Search
 {
-    public class MethodIndex
+    internal sealed class MethodIndex
     {
         public Assembly Assembly { get; set; }
         public string Namespace { get; set; }
@@ -15,7 +15,7 @@ namespace JitInspector.Search
         public MethodInfo Method { get; set; }
     }
 
-    public class SearchableMethodIndex
+    internal sealed class SearchableMethodIndex
     {
         private List<MethodIndex> _methodIndices = new List<MethodIndex>();
 
