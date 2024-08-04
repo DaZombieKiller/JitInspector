@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace JitInspector.UI
+namespace JitInspector
 {
     public static class StringBuilderExtensions
     {
