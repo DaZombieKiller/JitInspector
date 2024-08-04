@@ -152,7 +152,7 @@ namespace JitInspector.UI
         {
             RunSearchAsync(evt.newValue);
         }
-        async void RunSearchAsync(string value)
+        private async Task RunSearchAsync(string value)
         {
             _searchCTS?.Cancel();
             _searchCTS = new CancellationTokenSource();
