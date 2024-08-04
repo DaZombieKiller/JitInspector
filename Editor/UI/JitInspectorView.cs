@@ -305,29 +305,5 @@ namespace JitInspector.UI
             JitInspectorHelpers.WriteDisassembly(method, code, size, formatter, text);
             return text.ToString();
         }
-        public async Task ApplyFilterAsync(string filter)
-        {
-            // Cancel any pending operation
-            _initCtes?.Cancel();
-            _initCtes = new CancellationTokenSource();
-
-            try
-            {
-                // Wait for the specified delay
-                await Task.Delay(TimeSpan.FromSeconds(_delay), _initCtes.Token);
-
-                // If we haven't been canceled, apply the filter
-                //tree.SetFilter(filter);
-            }
-            catch (TaskCanceledException)
-            {
-                // Task was canceled, do nothing
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Error applying filter: {ex}");
-            }
-        }
-
     }
 }
