@@ -113,7 +113,8 @@ namespace JitInspector.UI
             s_syntaxBuilder.AppendColored(method.DeclaringType.Name, JitInspectorHelpers.GetHighlightColor(method.DeclaringType));
             var typeString = s_syntaxBuilder.ToString();
             s_syntaxBuilder.Clear();
-            _selectedItemName.text = $"{typeString} {{ {JitInspectorHelpers.GetMethodSignature(method, s_syntaxBuilder)} }}";
+            JitInspectorHelpers.AppendMethodSignature(method, s_syntaxBuilder, includeParamNames: true);
+            _selectedItemName.text = $"{typeString} {{ {s_syntaxBuilder} }}";
             _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
@@ -247,7 +248,8 @@ namespace JitInspector.UI
             return methods.Select(m =>
             {
                 s_syntaxBuilder.Clear();
-                return new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m, s_syntaxBuilder), m);
+                JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true);
+                return new TreeViewItem(s_syntaxBuilder.ToString(), m);
             }).ToList();
         }
 
@@ -270,7 +272,7 @@ namespace JitInspector.UI
         public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
         {
             return typeGroup
-                .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, s_syntaxBuilder), m.Method))
+                .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, includeParamNames: true), m.Method))
                 .ToList();
         }
 
@@ -279,11 +281,12 @@ namespace JitInspector.UI
             if (!JitInspectorHelpers.TryGetJitCode(method, out var code, out var size))
                 return string.Empty;
 
-            return GetDisassembly(method, (byte*)code, size, new NasmFormatter
+            return GetDisassembly(method, (byte*)code, size, new IntelFormatter(new MonoSymbolResolver())
             {
                 Options =
                 {
-                    FirstOperandCharIndex = 10
+                    RipRelativeAddresses = true,
+                    FirstOperandCharIndex = 10,
                 }
             });
         }

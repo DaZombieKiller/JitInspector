@@ -12,29 +12,59 @@ namespace JitInspector
     {
         public static bool IsSupportedForJitInspection(MethodInfo method)
         {
-            if (method.IsGenericMethod) return false;
-            if (method.GetMethodBody() == null || method.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
+            if (method.IsGenericMethod)
                 return false;
 
-            return true;
+            if (method.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
+                return false;
+
+            return method.GetMethodBody() != null;
         }
-        public static string GetMethodSignature(MethodInfo method, StringBuilder s_syntaxBuilder = null)
+
+        public static string GetMethodSignature(MethodInfo method, bool includeParamNames)
         {
-            s_syntaxBuilder ??= new StringBuilder();
-            s_syntaxBuilder.AppendTypeName(method.ReturnType);
-            s_syntaxBuilder.Append(" ");
-            s_syntaxBuilder.AppendColored(method.Name, "#dcdcaa");
-            s_syntaxBuilder.AppendColored("(", "#efb839");
+            var builder = new StringBuilder();
+            AppendMethodSignature(method, builder, includeParamNames);
+            return builder.ToString();
+        }
+
+        public static void AppendMethodSignature(MethodInfo method, StringBuilder builder, bool includeParamNames)
+        {
+            if (method.DeclaringType is Type declaringType)
+            {
+                builder.AppendTypeName(declaringType);
+                builder.Append(':');
+            }
+
+            builder.AppendColored(method.Name, "#dcdcaa");
+            builder.AppendColored("(", "#efb839");
             var parameters = method.GetParameters();
+
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (i > 0) s_syntaxBuilder.Append(", ");
-                s_syntaxBuilder.AppendTypeName(parameters[i].ParameterType);
-                s_syntaxBuilder.Append(" ");
-                s_syntaxBuilder.Append(parameters[i].Name);
+                if (i > 0)
+                    builder.Append(", ");
+
+                builder.AppendTypeName(parameters[i].ParameterType);
+
+                if (includeParamNames && !string.IsNullOrEmpty(parameters[i].Name))
+                {
+                    builder.Append(" ");
+                    builder.Append(parameters[i].Name);
+                }
             }
-            s_syntaxBuilder.AppendColored(")", "#efb839");
-            return s_syntaxBuilder.ToString();
+
+            builder.AppendColored(")", "#efb839");
+
+            builder.Append(':');
+            builder.AppendTypeName(method.ReturnType);
+
+            if (method.CallingConvention.HasFlag(CallingConventions.HasThis)
+                && !method.CallingConvention.HasFlag(CallingConventions.ExplicitThis))
+            {
+                builder.Append(':');
+                builder.AppendColored("this", "#569cd6");
+            }
         }
 
         public static unsafe bool TryGetJitCode(RuntimeMethodHandle handle, out void* code, out int size)
