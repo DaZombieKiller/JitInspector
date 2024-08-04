@@ -113,7 +113,7 @@ namespace JitInspector.UI
 
             _thumb.style.width = isHorizontal ? _thumbWidth : Length.Percent(100);
             _thumb.style.height = isHorizontal ? Length.Percent(100) : _thumbWidth;
-            SetCursor(_thumb, isHorizontal ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical);
+            _thumb.SetCursor(isHorizontal ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical);
 
             _firstElement.style.width = isHorizontal ? Length.Percent(50) : Length.Percent(100);
             _firstElement.style.height = isHorizontal ? Length.Percent(100) : Length.Percent(50);
@@ -186,14 +186,6 @@ namespace JitInspector.UI
         {
             _secondElement.Clear();
             _secondElement.Add(element);
-        }
-
-        public static void SetCursor(VisualElement element, MouseCursor cursor)
-        {
-            object objCursor = new Cursor();
-            PropertyInfo fields = typeof(Cursor).GetProperty("defaultCursorId", BindingFlags.NonPublic | BindingFlags.Instance);
-            fields.SetValue(objCursor, (int)cursor);
-            element.style.cursor = new StyleCursor((Cursor)objCursor);
         }
     }
 }
