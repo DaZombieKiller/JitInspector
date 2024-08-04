@@ -150,7 +150,7 @@ namespace JitInspector.UI
         }
         public void OnSearchChanged(ChangeEvent<string> evt)
         {
-            RunSearchAsync(evt.newValue);
+            _ = RunSearchAsync(evt.newValue);
         }
         private async Task RunSearchAsync(string value)
         {
