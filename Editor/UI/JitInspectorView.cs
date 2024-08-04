@@ -84,6 +84,7 @@ namespace JitInspector.UI
             };
             jitAsmListView.bindItem = (ve, i) => ((Label)ve).text = loadedSourceLines[i];
             jitAsmListView.Rebuild();
+            jitAsmListView.ScrollToItem(0);
 
             selectedItemName = viewBase.Q<Label>("selected-item-name");
 
@@ -103,6 +104,7 @@ namespace JitInspector.UI
             var lines = text.Split(Environment.NewLine);
             loadedSourceLines.AddRange(lines);
             jitAsmListView.Rebuild();
+            jitAsmListView.ScrollToItem(0);
         }
         private void OnTreeItemExpanded(TreeViewItem item)
         {
