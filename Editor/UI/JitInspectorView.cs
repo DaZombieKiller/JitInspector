@@ -98,7 +98,7 @@ namespace JitInspector.UI
             if (item.Data is not MethodInfo method)
                 return;
 
-            selectedItemName.text = $"<color=#4ec9b0>{method.DeclaringType.Name}</color> {{ {GetMethodSignature(method)} }}";
+            selectedItemName.text = $"{HighlightTypeName(method.DeclaringType)} {{ {GetMethodSignature(method)} }}";
             loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
