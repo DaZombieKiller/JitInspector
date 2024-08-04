@@ -28,7 +28,7 @@ namespace JitInspector.UI
         private readonly float _delay = 0.45f;
 
         [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
+        private VisualTreeAsset jitInspectorTemplateAsset = default;
 
         private VisualElement viewBase;
         private VirtualizedTreeView tree;
@@ -64,7 +64,7 @@ namespace JitInspector.UI
 
         public void CreateGUI()
         {
-            TemplateContainer templateContainer = m_VisualTreeAsset.Instantiate();
+            TemplateContainer templateContainer = jitInspectorTemplateAsset.Instantiate();
             viewBase = templateContainer.Children().First();
             for (int i = 0; i < templateContainer.styleSheets.count; i++)
                 viewBase.styleSheets.Add(templateContainer.styleSheets[i]);
