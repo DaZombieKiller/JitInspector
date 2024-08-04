@@ -9,7 +9,6 @@ namespace JitInspector.UI
 {
     public class SplitContainer : VisualElement
     {
-
         public new class UxmlFactory : UxmlFactory<SplitContainer, UxmlTraits> { }
 
         public new class UxmlTraits : VisualElement.UxmlTraits
