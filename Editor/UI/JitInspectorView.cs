@@ -219,7 +219,7 @@ namespace JitInspector.UI
                     var mtvi = GetMethodItems(t);
                     s_syntaxBuilder.Clear();
                     s_syntaxBuilder.AppendColored(color: "#569cd6",
-                               text: (t.IsAbstract ? "abstract " : string.Empty)
+                               text: (t.IsAbstract ? (t.IsSealed ? "static " : "abstract ") : string.Empty)
                                    + (t.IsValueType ? "struct " : "class "));
                     s_syntaxBuilder.AppendColored(t.Name, JitInspectorHelpers.GetHighlightColor(t));
                     var name = s_syntaxBuilder.ToString();
