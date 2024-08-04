@@ -159,8 +159,8 @@ namespace JitInspector.UI
             var nameLabel = button.Q<Label>("name-label");
 
             indentElement.style.width = item.Depth * 10;
-            expansionLabel.text = item.HasChildren 
-                                ? (item.IsExpanded ? expanded : collapsed) 
+            expansionLabel.text = item.HasChildren
+                                ? (item.IsExpanded ? expanded : collapsed)
                                 : "  ";
             nameLabel.text = item.DisplayName;
 
