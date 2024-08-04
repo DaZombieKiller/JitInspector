@@ -29,7 +29,7 @@ namespace JitInspector.UI
         private readonly float _delay = 0.45f;
 
         [SerializeField]
-        private VisualTreeAsset _jitInspectorTemplateAsset = default;
+        private VisualTreeAsset _jitInspectorTemplateAsset;
         private VisualElement _viewBase;
         private VirtualizedTreeView _tree;
         private ToolbarSearchField _searchField;
