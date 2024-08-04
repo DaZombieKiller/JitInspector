@@ -14,6 +14,7 @@ namespace JitInspector.Search
         public Type DeclaringType { get; set; }
         public MethodInfo Method { get; set; }
     }
+
     public class SearchableMethodIndex
     {
         private List<MethodIndex> _methodIndices = new List<MethodIndex>();
