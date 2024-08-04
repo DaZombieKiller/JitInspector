@@ -146,8 +146,8 @@ namespace JitInspector.UI
             itemElement.Add(extraDataLabel);
             return itemElement;
         }
-        const string expanded = "▼ ";
-        const string collapsed = "▶ ";
+        private const string expanded = "▼ ";
+        private const string collapsed = "▶ ";
         private void UpdateItemElement(VisualElement itemElement, TreeViewItem item, int index)
         {
             var button = itemElement as Button;
