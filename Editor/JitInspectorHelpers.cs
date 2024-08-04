@@ -276,7 +276,7 @@ namespace JitInspector
             }
         }
 
-        private static readonly IReadOnlyDictionary<Type, string> SpecialTypeNames = new Dictionary<Type, string>()
+        private static readonly Dictionary<Type, string> SpecialTypeNames = new Dictionary<Type, string>()
         {
             { typeof(void)    , "void"   },
             { typeof(Single)  , "float"  },
