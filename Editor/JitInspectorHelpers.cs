@@ -228,7 +228,18 @@ namespace JitInspector
             "aggressive-inlining"
         };
 
-        public static string GetTypeName(Type type) => SpecialTypeNames.ContainsKey(type) ? SpecialTypeNames[type] : type.Name;
+        public static string GetTypeName(Type type)
+        {
+            if (SpecialTypeNames.ContainsKey(type))
+            {
+                return SpecialTypeNames[type];
+            }
+            else
+            {
+                return type.Name;
+            }
+        }
+
         public static string GetHighlightColor(Type type)
         {
             if (SpecialTypeNames.ContainsKey(type))
