@@ -250,9 +250,9 @@ namespace JitInspector
 
         public static string GetTypeName(Type type)
         {
-            if (SpecialTypeNames.ContainsKey(type))
+            if (SpecialTypeNames.TryGetValue(type, out string name))
             {
-                return SpecialTypeNames[type];
+                return name;
             }
             else
             {
