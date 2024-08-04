@@ -1,0 +1,61 @@
+.custom-label {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(68, 138, 255);
+}
+
+.grow {
+    flex-grow: 1;
+}
+
+.horizontal {
+    flex-direction: row;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.monospace {
+    -unity-font: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
+    -unity-font-definition: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
+    font-size: 13px;
+    white-space: normal;
+    flex-grow: 1;
+}
+
+.tree-item {
+    flex-direction: row;
+    border-width: 0;
+    background-color: transparent;
+    -unity-text-align: middle-left;
+    padding: 0;
+    margin-top: 0;
+    margin-left: 4px;
+    margin-right: 0;
+    margin-bottom: 0;
+    height: 20px;
+    left: 0;
+    right: 0;
+}
+
+#tree-item-extra-data {
+    position: absolute;
+    right: 0;
+}
+
+.selected-item-label {
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-left;
+    -unity-font: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
+    -unity-font-definition: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
+}
+
+.status {
+    position: absolute;
+    right: 0;
+    -unity-text-align: middle-left;
+    top: 0;
+    bottom: 0;
+    color: rgb(255, 255, 255);
+}

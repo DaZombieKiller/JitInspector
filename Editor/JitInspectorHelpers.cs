@@ -1,13 +1,42 @@
-﻿using System;
+﻿using Iced.Intel;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Iced.Intel;
 using static JitInspector.MonoInterop;
+using StringBuilder = System.Text.StringBuilder;
 
 namespace JitInspector
 {
     internal static unsafe class JitInspectorHelpers
     {
+        public static bool IsSupportedForJitInspection(MethodInfo method)
+        {
+            if (method.IsGenericMethod) return false;
+            if (method.GetMethodBody() == null || method.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
+                return false;
+
+            return true;
+        }
+        public static string GetMethodSignature(MethodInfo method, StringBuilder s_syntaxBuilder = null)
+        {
+            s_syntaxBuilder ??= new StringBuilder();
+            s_syntaxBuilder.AppendTypeName(method.ReturnType);
+            s_syntaxBuilder.Append(" ");
+            s_syntaxBuilder.AppendColored(method.Name, "#dcdcaa");
+            s_syntaxBuilder.AppendColored("(", "#efb839");
+            var parameters = method.GetParameters();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (i > 0) s_syntaxBuilder.Append(", ");
+                s_syntaxBuilder.AppendTypeName(parameters[i].ParameterType);
+                s_syntaxBuilder.Append(" ");
+                s_syntaxBuilder.Append(parameters[i].Name);
+            }
+            s_syntaxBuilder.AppendColored(")", "#efb839");
+            return s_syntaxBuilder.ToString();
+        }
+
         public static unsafe bool TryGetJitCode(RuntimeMethodHandle handle, out void* code, out int size)
         {
             var fp = (void*)handle.GetFunctionPointer();
@@ -116,7 +145,7 @@ namespace JitInspector
                 var instr = decoder.Decode();
                 formatter.Format(instr, output);
 
-                writer.Write("<color=grey>");
+                writer.Write("<color=#888888>");
                 for (int i = 0; i < instr.Length; i++)
                     writer.Write($"{code[(int)(instr.IP - (ulong)code) + i]:X2}");
                 writer.Write("</color>");
@@ -225,6 +254,49 @@ namespace JitInspector
             "unsafe",
             "alias-analysis",
             "aggressive-inlining"
+        };
+
+        public static string GetTypeName(Type type)
+        {
+            if (SpecialTypeNames.TryGetValue(type, out string name))
+            {
+                return name;
+            }
+            else
+            {
+                return type.Name;
+            }
+        }
+
+        public static string GetHighlightColor(Type type)
+        {
+            if (SpecialTypeNames.ContainsKey(type))
+            {
+                return "#569cd6";
+            }
+            else if (type.IsValueType)
+            {
+                return "#86c691";
+            }
+            else
+            {
+                return "#4ec9b0";
+            }
+        }
+
+        private static readonly Dictionary<Type, string> SpecialTypeNames = new Dictionary<Type, string>()
+        {
+            { typeof(void)    , "void"   },
+            { typeof(Single)  , "float"  },
+            { typeof(Double)  , "double" },
+            { typeof(Int16)   , "short"  },
+            { typeof(Int32)   , "int"    },
+            { typeof(Int64)   , "long"   },
+            { typeof(UInt16)  , "ushort" },
+            { typeof(UInt32)  , "uint"   },
+            { typeof(UInt64)  , "ulong"  },
+            { typeof(Boolean) , "bool"   },
+            { typeof(String)  , "string" },
         };
     }
 }
