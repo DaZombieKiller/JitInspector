@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 using Label = UnityEngine.UIElements.Label;
 
