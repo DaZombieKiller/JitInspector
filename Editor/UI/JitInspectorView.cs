@@ -114,7 +114,7 @@ namespace JitInspector.UI
             var typeString = s_syntaxBuilder.ToString();
             s_syntaxBuilder.Clear();
             JitInspectorHelpers.AppendMethodSignature(method, s_syntaxBuilder, includeParamNames: true);
-            _selectedItemName.text = $"{typeString} {{ {s_syntaxBuilder} }}";
+            _selectedItemName.text = s_syntaxBuilder.ToString();
             _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
             var lines = text.Split(Environment.NewLine);
