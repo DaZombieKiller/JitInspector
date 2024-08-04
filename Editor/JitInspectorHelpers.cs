@@ -229,9 +229,22 @@ namespace JitInspector
         };
 
         public static string GetTypeName(Type type) => SpecialTypeNames.ContainsKey(type) ? SpecialTypeNames[type] : type.Name;
-        public static string GetHighlightColor(Type type) => SpecialTypeNames.ContainsKey(type)
-                                                           ? (type.IsValueType ? "#86c691" : "#4ec9b0")
-                                                           : "#569cd6";
+        public static string GetHighlightColor(Type type)
+        {
+            if (SpecialTypeNames.ContainsKey(type))
+            {
+                return "#569cd6";
+            }
+            else if (type.IsValueType)
+            {
+                return ("#86c691");
+            }
+            else
+            {
+                return ("#4ec9b0");
+            }
+        }
+
         private static readonly IReadOnlyDictionary<Type, string> SpecialTypeNames = new Dictionary<Type, string>()
         {
             { typeof(void)    , "void"   },
