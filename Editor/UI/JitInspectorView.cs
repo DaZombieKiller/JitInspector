@@ -177,7 +177,7 @@ namespace JitInspector.UI
             catch (TaskCanceledException)
             {
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
