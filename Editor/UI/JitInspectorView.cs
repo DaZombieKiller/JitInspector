@@ -240,7 +240,7 @@ namespace JitInspector.UI
         private List<TreeViewItem> GetMethodItems(Type type)
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(m => !m.IsGenericMethod && m.GetMethodBody() != null && !m.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
+                .Where(m => JitInspectorHelpers.IsSupportedForJitInspection(m))
                 .OrderBy(m => m.Name)
                 .ToList();
 

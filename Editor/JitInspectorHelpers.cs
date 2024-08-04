@@ -10,6 +10,14 @@ namespace JitInspector
 {
     internal static unsafe class JitInspectorHelpers
     {
+        public static bool IsSupportedForJitInspection(MethodInfo method)
+        {
+            if (method.IsGenericMethod) return false;
+            if (method.GetMethodBody() == null || method.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
+                return false;
+
+            return true;
+        }
         public static string GetMethodSignature(MethodInfo method, StringBuilder s_syntaxBuilder = null)
         {
             s_syntaxBuilder ??= new StringBuilder();
