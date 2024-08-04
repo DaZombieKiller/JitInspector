@@ -40,17 +40,6 @@ namespace JitInspector.UI
         private CancellationTokenSource _searchCTS;
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
         private List<string> _loadedSourceLines = new List<string>();
-        public static IEnumerable<Type> SafeTypeLoad(Assembly asm)
-        {
-            try
-            {
-                return asm.GetTypes();
-            }
-            catch (ReflectionTypeLoadException rtle)
-            {
-                return rtle.Types;
-            }
-        }
 
         [MenuItem("Window/JIT Inspector View", isValidateFunction: false, priority: 8)]
         public static void ShowExample()
