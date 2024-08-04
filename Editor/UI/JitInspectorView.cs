@@ -57,7 +57,7 @@ namespace JitInspector.UI
         public static void ShowExample()
         {
             var wnd = GetWindow<JitInspectorView>();
-            wnd.titleContent = new GUIContent("JITInspector");
+            wnd.titleContent = new GUIContent("JIT Inspector");
         }
 
         public void CreateGUI()
