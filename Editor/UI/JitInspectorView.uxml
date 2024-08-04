@@ -4,6 +4,7 @@
         <ui:VisualElement name="tree-container" class="overflow-hidden grow">
             <uie:Toolbar>
                 <uie:ToolbarSearchField focusable="true" name="target-filter" class="grow" />
+                <ui:Label tabindex="-1" parse-escape-sequences="true" display-tooltip-when-elided="true" name="build-status-label" class="status" />
             </uie:Toolbar>
         </ui:VisualElement>
         <ui:VisualElement name="source-container" style="flex-grow: 1;">

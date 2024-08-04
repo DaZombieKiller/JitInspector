@@ -50,3 +50,12 @@
     -unity-font: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
     -unity-font-definition: resource('Packages/com.zombie.jit-inspector/Assets/CASCADIAMONO.ttf');
 }
+
+.status {
+    position: absolute;
+    right: 0;
+    -unity-text-align: middle-left;
+    top: 0;
+    bottom: 0;
+    color: rgb(255, 255, 255);
+}

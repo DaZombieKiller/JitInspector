@@ -41,7 +41,6 @@ namespace JitInspector.UI
         private CancellationTokenSource _searchCTS;
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
         private List<string> _loadedSourceLines = new List<string>();
-
         public static IEnumerable<Type> SafeTypeLoad(Assembly asm)
         {
             try
@@ -74,8 +73,7 @@ namespace JitInspector.UI
                 .ToList();
 
             SetupUI();
-
-            EditorApplication.delayCall += InitializeAsync;
+            _ = InitializeAsync();
         }
         private void SetupUI()
         {
@@ -85,7 +83,7 @@ namespace JitInspector.UI
 
             _searchField = _viewBase.Q<ToolbarSearchField>("target-filter");
             _searchField.RegisterValueChangedCallback(OnSearchChanged);
-            _statusLabel = new Label("Building index...");
+            _statusLabel = _viewBase.Q<Label>("build-status-label");
 
             _jitAsmListView = _viewBase.Q<ListView>("jit-asm");
             _jitAsmListView.itemsSource = _loadedSourceLines;
@@ -106,12 +104,14 @@ namespace JitInspector.UI
 
             Refresh();
         }
-        private async void InitializeAsync()
+        private async Task InitializeAsync()
         {
             _initCtes = new CancellationTokenSource();
             _statusLabel.text = "Building index...";
             await s_methodIndex.BuildIndexAsync(_initCtes.Token);
             _statusLabel.text = "Index built successfully.";
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            _statusLabel.text = string.Empty;
             Refresh();
         }
         private void OnTreeItemSelected(TreeViewItem item)
