@@ -4,6 +4,10 @@
     color: rgb(68, 138, 255);
 }
 
+.unity-list-view__empty-label {
+    display: none;
+}
+
 .grow {
     flex-grow: 1;
 }

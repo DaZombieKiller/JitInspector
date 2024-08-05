@@ -31,6 +31,9 @@ namespace JitInspector.UI
         [SerializeField]
         private string _searchString;
 
+        [SerializeField]
+        private MethodReference _methodReference;
+
         private VisualElement _viewBase;
         private VirtualizedTreeView _tree;
         private ToolbarSearchField _searchField;
@@ -43,6 +46,53 @@ namespace JitInspector.UI
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
         private List<string> _loadedSourceLines = new List<string>();
         private List<TreeViewItem> _searchResults;
+
+        [Serializable]
+        private struct MethodReference
+        {
+            public string DeclaringType;
+
+            public string Name;
+
+            public string[] Parameters;
+
+            public MethodReference(MethodBase method)
+            {
+                Name = method.Name;
+                DeclaringType = method.DeclaringType.AssemblyQualifiedName;
+                var param = method.GetParameters();
+                Parameters = new string[param.Length];
+
+                for (int i = 0; i < Parameters.Length; i++)
+                {
+                    Parameters[i] = param[i].ParameterType.AssemblyQualifiedName;
+                }
+            }
+
+            public readonly bool TryGetMethod(out MethodBase method)
+            {
+                var declaringType = Type.GetType(DeclaringType);
+                var paramTypes = new Type[Parameters.Length];
+
+                for (int i = 0; i < paramTypes.Length; i++)
+                {
+                    paramTypes[i] = Type.GetType(Parameters[i]);
+                }
+
+                if (declaringType == null || Name == null)
+                {
+                    method = null;
+                    return false;
+                }
+
+                if (Name == ".ctor" || Name == ".cctor")
+                    method = declaringType.GetConstructor(JitInspectorHelpers.DeclaredMembers, null, paramTypes, null);
+                else
+                    method = declaringType.GetMethod(Name, JitInspectorHelpers.DeclaredMembers, null, paramTypes, null);
+
+                return method != null;
+            }
+        }
 
         [MenuItem("Window/JIT Inspector View", isValidateFunction: false, priority: 8)]
         public static void ShowExample()
@@ -78,6 +128,7 @@ namespace JitInspector.UI
             _searchField.RegisterValueChangedCallback(OnSearchChanged);
             _statusLabel = _viewBase.Q<Label>("build-status-label");
 
+            _loadedSourceLines.Clear();
             _jitAsmListView = _viewBase.Q<ListView>("jit-asm");
             _jitAsmListView.itemsSource = _loadedSourceLines;
             _jitAsmListView.makeItem = () =>
@@ -91,6 +142,7 @@ namespace JitInspector.UI
             _jitAsmListView.ScrollToItem(0);
 
             _selectedItemName = _viewBase.Q<Label>("selected-item-name");
+            _selectedItemName.text = string.Empty;
 
             _tree.OnItemSelected += OnTreeItemSelected;
             _tree.OnItemExpanded += OnTreeItemExpanded;
@@ -101,9 +153,9 @@ namespace JitInspector.UI
             }
         }
 
-
         private async Task InitializeAsync()
         {
+            Refresh();
             _initCtes = new CancellationTokenSource();
             _statusLabel.text = "Building index...";
             await s_methodIndex.BuildIndexAsync(_initCtes.Token);
@@ -113,14 +165,61 @@ namespace JitInspector.UI
             _statusLabel.text = string.Empty;
         }
 
+        private bool ExpandMethod(MethodBase method, out TreeViewItem asmItem, out TreeViewItem nsItem, out TreeViewItem typeItem, out TreeViewItem methodItem)
+        {
+            asmItem = _tree.Items?.FirstOrDefault(item => (Assembly)item.Data == method.DeclaringType.Assembly);
+
+            if (asmItem == null)
+                goto NotFound;
+
+            _tree.ExpandItem(asmItem);
+            nsItem = asmItem.Children?.FirstOrDefault(item => (string)item.Data == method.DeclaringType.Namespace);
+
+            if (nsItem == null)
+                goto NotFound;
+
+            _tree.ExpandItem(nsItem);
+            typeItem = nsItem.Children?.FirstOrDefault(item => (Type)item.Data == method.DeclaringType);
+
+            if (typeItem == null)
+                goto NotFound;
+
+            _tree.ExpandItem(typeItem);
+            methodItem = typeItem.Children?.FirstOrDefault(item => (MethodBase)item.Data == method);
+
+            if (methodItem == null)
+                goto NotFound;
+
+            _tree.RefreshItem(asmItem);
+            return true;
+
+        NotFound:
+            asmItem = null;
+            nsItem = null;
+            typeItem = null;
+            methodItem = null;
+            return false;
+        }
+
+        private void SelectReferencedMethod()
+        {
+            if (!_methodReference.TryGetMethod(out var method))
+                return;
+
+            if (!ExpandMethod(method, out _, out _, out _, out var methodItem))
+                return;
+
+            _tree.SelectItem(methodItem);
+        }
+
         private void OnTreeItemSelected(TreeViewItem item)
         {
             if (item.Data is not MethodBase method)
                 return;
 
+            _methodReference = new MethodReference(method);
             s_syntaxBuilder.Clear();
             s_syntaxBuilder.AppendColored(method.DeclaringType.Name, JitInspectorHelpers.GetHighlightColor(method.DeclaringType));
-            var typeString = s_syntaxBuilder.ToString();
             s_syntaxBuilder.Clear();
             JitInspectorHelpers.AppendMethodSignature(method, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
             _selectedItemName.text = s_syntaxBuilder.ToString();
@@ -212,6 +311,7 @@ namespace JitInspector.UI
             }
 
             _tree.SetItems(items);
+            SelectReferencedMethod();
         }
 
         private List<TreeViewItem> GetFullNameItems(Assembly assembly)

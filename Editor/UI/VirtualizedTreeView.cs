@@ -24,6 +24,7 @@ namespace JitInspector.UI
 
         public event Action<TreeViewItem> OnItemSelected;
         public event Action<TreeViewItem> OnItemExpanded;
+        public List<TreeViewItem> Items => _items;
 
         public VirtualizedTreeView()
         {
@@ -192,6 +193,11 @@ namespace JitInspector.UI
             RefreshVisibleItems();
         }
 
+        public void SelectItem(TreeViewItem item)
+        {
+            OnItemClicked(item);
+        }
+
         private void OnItemClicked(TreeViewItem item)
         {
             if (item.HasChildren)
@@ -206,6 +212,15 @@ namespace JitInspector.UI
                 RefreshVisibleItems();
             }
             OnItemSelected?.Invoke(item);
+        }
+
+        public void ExpandItem(TreeViewItem item)
+        {
+            if (item.HasChildren && !item.IsExpanded)
+            {
+                item.IsExpanded = true;
+                OnItemExpanded?.Invoke(item);
+            }
         }
 
         public void RefreshItem(TreeViewItem item)
