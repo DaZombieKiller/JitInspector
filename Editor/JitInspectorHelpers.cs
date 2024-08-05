@@ -253,6 +253,9 @@ namespace JitInspector
                 var instr = decoder.Decode();
                 formatter.Format(instr, output);
 
+                writer.Write((instr.IP - (ulong)code).ToString("X8"));
+                writer.Write(" ");
+
                 writer.Write("<color=#888888>");
                 for (int i = 0; i < instr.Length; i++)
                     writer.Write($"{code[(int)(instr.IP - (ulong)code) + i]:X2}");
