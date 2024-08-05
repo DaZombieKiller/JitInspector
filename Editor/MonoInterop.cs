@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -36,6 +37,8 @@ namespace JitInspector
 
         // TODO: Not really necessary to import this, can be implemented in managed code. Only exposed directly for passing to monoeg_g_hash_table_foreach.
         public static delegate* unmanaged[Cdecl]<void*, void*, void*, void> find_tramp;
+
+        private static delegate* unmanaged[Cdecl]<uint*, uint> s_mono_arch_cpu_optimizations;
 
         private static int* s_mono_use_fast_math;
 
@@ -134,6 +137,12 @@ namespace JitInspector
         {
             var info = *(void**)((byte*)ji + ti_MonoJitInfo["d"].offset);
             return *(void**)((byte*)info + ti_MonoTrampInfo["method"].offset);
+        }
+
+        private static uint mono_arch_cpu_optimizations(uint* exclude_mask)
+        {
+            ThrowIfMonoSymbolNotFound(s_mono_arch_cpu_optimizations, nameof(mono_arch_cpu_optimizations));
+            return s_mono_arch_cpu_optimizations(exclude_mask);
         }
 
         public static bool mono_use_fast_math
@@ -307,6 +316,9 @@ namespace JitInspector
             if (SymFromName(process.Handle, nameof(find_tramp), &info))
                 find_tramp = (delegate* unmanaged[Cdecl]<void*, void*, void*, void>)info.Address;
 
+            if (SymFromName(process.Handle, nameof(mono_arch_cpu_optimizations), &info))
+                s_mono_arch_cpu_optimizations = (delegate* unmanaged[Cdecl]<uint*, uint>)info.Address;
+
             if (SymFromName(process.Handle, nameof(default_opt), &info))
                 s_default_opt = (uint*)info.Address;
 
@@ -347,6 +359,14 @@ namespace JitInspector
                     Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
 
                 InitializeWithSymbols(process);
+                DEFAULT_CPU_OPTIMIZATIONS = (uint)mono_parse_default_optimizations(null);
+
+                fixed (byte* all = Encoding.UTF8.GetBytes("all\0"))
+                    EXCLUDED_FROM_ALL = ~(uint)mono_parse_default_optimizations(all);
+
+                uint exclude_mask;
+                mono_arch_cpu_optimizations(&exclude_mask);
+                ALL_CPU_OPTIMIZATIONS = ~(EXCLUDED_FROM_ALL | exclude_mask);
             }
             catch (Exception ex)
             {
@@ -384,5 +404,115 @@ namespace JitInspector
             public int offset;
             public int bitpos;
         }
+
+        private static readonly string[] opt_names =
+        {
+            "peephole",
+            "branch",
+            "inline",
+            "cfold",
+            "consprop",
+            "copyprop",
+            "deadce",
+            "linears",
+            "cmov",
+            "shared",
+            "sched",
+            "intrins",
+            "tailc",
+            "loop",
+            "fcmov",
+            "leaf",
+            "aot",
+            "precomp",
+            "abcrem",
+            "ssapre",
+            "exception",
+            "ssa",
+            "float32",
+            "sse2",
+            "gsharedvt",
+            "gshared",
+            "simd",
+            "unsafe",
+            "alias-analysis",
+            "aggressive-inlining"
+        };
+
+        public static int optflag_get_count()
+        {
+            return opt_names.Length;
+        }
+
+        public static string optflag_get_name(int i)
+        {
+            return opt_names[i];
+        }
+
+        public static readonly uint EXCLUDED_FROM_ALL;
+
+        public static readonly uint DEFAULT_CPU_OPTIMIZATIONS;
+
+        public static readonly uint ALL_CPU_OPTIMIZATIONS;
+
+        public const uint MONO_OPT_PEEPHOLE = 1 << 0;
+
+        public const uint MONO_OPT_BRANCH = 1 << 1;
+
+        public const uint MONO_OPT_INLINE = 1 << 2;
+
+        public const uint MONO_OPT_CFOLD = 1 << 3;
+
+        public const uint MONO_OPT_CONSPROP = 1 << 4;
+
+        public const uint MONO_OPT_COPYPROP = 1 << 5;
+
+        public const uint MONO_OPT_DEADCE = 1 << 6;
+
+        public const uint MONO_OPT_LINEARS = 1 << 7;
+
+        public const uint MONO_OPT_CMOV = 1 << 8;
+
+        public const uint MONO_OPT_SHARED = 1 << 9;
+
+        public const uint MONO_OPT_SCHED = 1 << 10;
+
+        public const uint MONO_OPT_INTRINS = 1 << 11;
+
+        public const uint MONO_OPT_TAILCALL = 1 << 12;
+
+        public const uint MONO_OPT_LOOP = 1 << 13;
+
+        public const uint MONO_OPT_FCMOV = 1 << 14;
+
+        public const uint MONO_OPT_LEAF = 1 << 15;
+
+        public const uint MONO_OPT_AOT = 1 << 16;
+
+        public const uint MONO_OPT_PRECOMP = 1 << 17;
+
+        public const uint MONO_OPT_ABCREM = 1 << 18;
+
+        public const uint MONO_OPT_SSAPRE = 1 << 19;
+
+        public const uint MONO_OPT_EXCEPTION = 1 << 20;
+
+        public const uint MONO_OPT_SSA = 1 << 21;
+
+        public const uint MONO_OPT_FLOAT32 = 1 << 22;
+
+        public const uint MONO_OPT_SSE2 = 1 << 23;
+
+        public const uint MONO_OPT_GSHAREDVT = 1 << 24;
+
+        public const uint MONO_OPT_GSHARED = 1 << 25;
+
+        public const uint MONO_OPT_SIMD = 1 << 26;
+
+        public const uint MONO_OPT_UNSAFE = 1 << 27;
+
+        public const uint MONO_OPT_ALIAS_ANALYSIS = 1 << 28;
+
+        public const uint MONO_OPT_AGGRESSIVE_INLINING = 1 << 29;
     }
 }

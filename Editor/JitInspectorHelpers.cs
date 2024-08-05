@@ -138,20 +138,20 @@ namespace JitInspector
             return true;
         }
 
-        private static void WriteComment(TextWriter writer, string comment, bool rich)
+        // Implementation from .NET Runtime sources
+        // https://github.com/dotnet/runtime/blob/dee8a8be71d755a1d27537ea8b3c59ee2a3d49c5/src/libraries/System.Private.CoreLib/src/System/Numerics/BitOperations.cs#L452-L463
+        private static int PopCount(uint value)
         {
-            if (rich)
-            {
-                writer.Write("<color=#6A9955>");
-            }
+            const uint c1 = 0x_55555555u;
+            const uint c2 = 0x_33333333u;
+            const uint c3 = 0x_0F0F0F0Fu;
+            const uint c4 = 0x_01010101u;
 
-            writer.Write(";\u00A0");
-            writer.Write(comment);
+            value -= (value >> 1) & c1;
+            value = (value & c2) + ((value >> 2) & c2);
+            value = (((value + (value >> 4)) & c3) * c4) >> 24;
 
-            if (rich)
-            {
-                writer.WriteLine("</color>");
-            }
+            return (int)value;
         }
 
         public static unsafe void WriteDisassembly(MethodBase method, byte* code, int size, Formatter formatter, TextWriter writer)
@@ -163,11 +163,72 @@ namespace JitInspector
             decoder.IP = (ulong)code;
             ulong tail = (ulong)(code + size);
 
-            WriteComment(writer, $"Assembly listing for method {method.DeclaringType.FullName}:{method.Name}", rich);
-            var opts = GetOptimizations(method.MethodHandle);
+            writer.WriteComment($"Assembly listing for method {GetMethodSignature(method, includeParamNames: false, includeRichText: false)}", rich);
+            var opts = mono_get_optimizations_for_method((void*)method.MethodHandle.Value, default_opt);
 
-            if (opts.Length > 0)
-                WriteComment(writer, $"--optimize={string.Join(",", opts)}", rich);
+            if (opts != DEFAULT_CPU_OPTIMIZATIONS)
+            {
+                writer.BeginComment(rich);
+                writer.Write("--optimize=");
+
+                if (opts == ALL_CPU_OPTIMIZATIONS)
+                    writer.Write("all");
+                else if (opts == 0)
+                    writer.Write("-all");
+                else
+                {
+                    bool all = false;
+                    uint mask = ~0u;
+
+                    if ((opts & ALL_CPU_OPTIMIZATIONS) == ALL_CPU_OPTIMIZATIONS)
+                    {
+                        all = true;
+                        mask = EXCLUDED_FROM_ALL;
+                        writer.Write("all");
+                    }
+                    else if (PopCount(~opts) > PopCount(opts))
+                    {
+                        all = true;
+                        mask = ~0u;
+                        writer.Write("-all");
+                    }
+
+                    for (int i = 0, n = 0; i < optflag_get_count(); i++)
+                    {
+                        if (all)
+                        {
+                            if (((opts & mask) & (1 << i)) != 0)
+                            {
+                                writer.Write(',');
+                                writer.Write(optflag_get_name(i));
+                                n++;
+                            }
+                        }
+                        else if ((DEFAULT_CPU_OPTIMIZATIONS & (1 << i)) != 0)
+                        {
+                            if ((opts & (1 << i)) == 0)
+                            {
+                                if (n > 0)
+                                    writer.Write(',');
+
+                                writer.Write('-');
+                                writer.Write(optflag_get_name(i));
+                                n++;
+                            }
+                        }
+                        else if ((opts & (1 << i)) != 0)
+                        {
+                            if (n > 0)
+                                writer.Write(',');
+
+                            writer.Write(optflag_get_name(i));
+                            n++;
+                        }
+                    }
+                }
+
+                writer.EndComment(rich);
+            }
 
             if (mono_debug_enabled())
             {
@@ -175,16 +236,12 @@ namespace JitInspector
 
                 if (options.Length > 0)
                 {
-                    WriteComment(writer, $"--debug={string.Join(",", options)}", rich);
-                }
-                else
-                {
-                    WriteComment(writer, "--debug", rich);
+                    writer.WriteComment($"--debug={string.Join(",", options)}", rich);
                 }
             }
 
             if (mono_use_fast_math)
-                WriteComment(writer, "--ffast-math", rich);
+                writer.WriteComment("--ffast-math", rich);
 
             writer.WriteLine();
 
@@ -210,7 +267,7 @@ namespace JitInspector
             }
 
             writer.WriteLine();
-            WriteComment(writer, $"Total bytes of code {size}", rich);
+            writer.WriteComment($"Total bytes of code {size}", rich);
         }
 
         public static string[] GetOptimizations(RuntimeMethodHandle handle)
@@ -226,11 +283,11 @@ namespace JitInspector
                 return Array.Empty<string>();
             }
 
-            var names = new string[s_Optimizations.Length];
+            var names = new string[optflag_get_count()];
 
-            for (int i = 0; i < s_Optimizations.Length; i++)
+            for (int i = 0; i < names.Length; i++)
             {
-                names[i] = s_Optimizations[i];
+                names[i] = optflag_get_name(i);
 
                 if ((opts & (1 << i)) == 0)
                 {
@@ -269,40 +326,6 @@ namespace JitInspector
 
             return names;
         }
-
-        private static readonly string[] s_Optimizations =
-        {
-            "peephole",
-            "branch",
-            "inline",
-            "cfold",
-            "consprop",
-            "copyprop",
-            "deadce",
-            "linears",
-            "cmov",
-            "shared",
-            "sched",
-            "intrins",
-            "tailc",
-            "loop",
-            "fcmov",
-            "leaf",
-            "aot",
-            "precomp",
-            "abcrem",
-            "ssapre",
-            "exception",
-            "ssa",
-            "float32",
-            "sse2",
-            "gsharedvt",
-            "gshared",
-            "simd",
-            "unsafe",
-            "alias-analysis",
-            "aggressive-inlining"
-        };
 
         public static string GetTypeName(Type type)
         {
