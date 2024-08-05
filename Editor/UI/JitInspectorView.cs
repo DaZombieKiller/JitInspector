@@ -99,9 +99,9 @@ namespace JitInspector.UI
             _statusLabel.text = "Building index...";
             await s_methodIndex.BuildIndexAsync(_initCtes.Token);
             _statusLabel.text = "Index built successfully.";
+            Refresh();
             await Task.Delay(TimeSpan.FromSeconds(5));
             _statusLabel.text = string.Empty;
-            Refresh();
         }
 
         private void OnTreeItemSelected(TreeViewItem item)
@@ -162,10 +162,10 @@ namespace JitInspector.UI
                 }
                 else
                 {
-                    var searchResults = s_methodIndex.Search(value)
+                    var searchResults = await Task.Run(() => s_methodIndex.Search(value)
                         .GroupBy(m => m.Assembly)
                         .Select(g => new TreeViewItem(g.Key.GetName().Name, g.Key, GetNamespaceItems(g), true, g.Key.GetName().Version.ToString()))
-                        .ToList();
+                        .ToList());
 
                     _tree.SetItems(searchResults);
                 }
