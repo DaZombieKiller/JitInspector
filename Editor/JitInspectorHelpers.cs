@@ -272,17 +272,18 @@ namespace JitInspector
 
         public static string[] GetOptimizations(RuntimeMethodHandle handle)
         {
-            uint opts;
-
             try
             {
-                opts = mono_get_optimizations_for_method((void*)handle.Value, default_opt);
+                return GetOptimizations(mono_get_optimizations_for_method((void*)handle.Value, default_opt));
             }
             catch
             {
                 return Array.Empty<string>();
             }
+        }
 
+        public static string[] GetOptimizations(uint opts)
+        {
             var names = new string[optflag_get_count()];
 
             for (int i = 0; i < names.Length; i++)
