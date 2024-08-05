@@ -65,7 +65,10 @@ namespace JitInspector
                 }
             }
 
-            builder.AppendColored(")", "#efb839");
+            if (includeRichText)
+                builder.AppendColored(")", "#efb839");
+            else
+                builder.Append(')');
 
             if (method is MethodInfo info)
             {

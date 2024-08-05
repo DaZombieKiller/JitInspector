@@ -27,6 +27,10 @@ namespace JitInspector.UI
 
         [SerializeField]
         private VisualTreeAsset _jitInspectorTemplateAsset;
+
+        [SerializeField]
+        private string _searchString;
+
         private VisualElement _viewBase;
         private VirtualizedTreeView _tree;
         private ToolbarSearchField _searchField;
@@ -38,6 +42,7 @@ namespace JitInspector.UI
         private CancellationTokenSource _searchCTS;
         private Dictionary<Assembly, Type[]> _assemblyTypes = new Dictionary<Assembly, Type[]>();
         private List<string> _loadedSourceLines = new List<string>();
+        private List<TreeViewItem> _searchResults;
 
         [MenuItem("Window/JIT Inspector View", isValidateFunction: false, priority: 8)]
         public static void ShowExample()
@@ -90,8 +95,12 @@ namespace JitInspector.UI
             _tree.OnItemSelected += OnTreeItemSelected;
             _tree.OnItemExpanded += OnTreeItemExpanded;
 
-            Refresh();
+            if (!string.IsNullOrEmpty(_searchString))
+            {
+                _searchField.SetValueWithoutNotify(_searchString);
+            }
         }
+
 
         private async Task InitializeAsync()
         {
@@ -99,7 +108,7 @@ namespace JitInspector.UI
             _statusLabel.text = "Building index...";
             await s_methodIndex.BuildIndexAsync(_initCtes.Token);
             _statusLabel.text = "Index built successfully.";
-            Refresh();
+            await RefreshAsync();
             await Task.Delay(TimeSpan.FromSeconds(5));
             _statusLabel.text = string.Empty;
         }
@@ -145,6 +154,7 @@ namespace JitInspector.UI
 
         public void OnSearchChanged(ChangeEvent<string> evt)
         {
+            _searchString = evt.newValue;
             _ = RunSearchAsync(evt.newValue);
         }
 
@@ -152,23 +162,22 @@ namespace JitInspector.UI
         {
             _searchCTS?.Cancel();
             _searchCTS = new CancellationTokenSource();
+
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(_delay), _searchCTS.Token);
+                _statusLabel.text = "Filtering methods...";
 
-                if (string.IsNullOrWhiteSpace(value))
+                if (!string.IsNullOrWhiteSpace(value))
                 {
-                    Refresh();
-                }
-                else
-                {
-                    var searchResults = await Task.Run(() => s_methodIndex.Search(value)
+                    _searchResults = await Task.Run(() => s_methodIndex.Search(value)
                         .GroupBy(m => m.Assembly)
                         .Select(g => new TreeViewItem(g.Key.GetName().Name, g.Key, GetNamespaceItems(g), true, g.Key.GetName().Version.ToString()))
                         .ToList());
-
-                    _tree.SetItems(searchResults);
                 }
+
+                _statusLabel.text = string.Empty;
+                Refresh();
             }
             catch (TaskCanceledException)
             {
@@ -179,12 +188,30 @@ namespace JitInspector.UI
             }
         }
 
+        private async Task RefreshAsync()
+        {
+            if (!string.IsNullOrEmpty(_searchString))
+                await RunSearchAsync(_searchString);
+            else
+                Refresh();
+        }
+
         private void Refresh()
         {
-            var rootItems = s_assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
-                .Where(tvi => tvi.Children.Any())
-                .ToList();
-            _tree.SetItems(rootItems);
+            List<TreeViewItem> items;
+
+            if (string.IsNullOrEmpty(_searchString) || _searchResults == null)
+            {
+                items = s_assemblies.Select(a => new TreeViewItem(a.GetName().Name, a, GetFullNameItems(a), CacheLoadTypes(a).Any(), a.GetName().Version.ToString()))
+                    .Where(tvi => tvi.Children.Any())
+                    .ToList();
+            }
+            else
+            {
+                items = _searchResults;
+            }
+
+            _tree.SetItems(items);
         }
 
         private List<TreeViewItem> GetFullNameItems(Assembly assembly)
