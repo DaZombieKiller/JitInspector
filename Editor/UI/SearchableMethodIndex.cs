@@ -12,7 +12,7 @@ namespace JitInspector.Search
         public Assembly Assembly { get; set; }
         public string Namespace { get; set; }
         public Type DeclaringType { get; set; }
-        public MethodInfo Method { get; set; }
+        public MethodBase Method { get; set; }
     }
 
     internal sealed class SearchableMethodIndex
@@ -38,9 +38,12 @@ namespace JitInspector.Search
                             if (cancellationToken.IsCancellationRequested) return;
 
                             var methods = type.GetMethods(JitInspectorHelpers.DeclaredMembers)
-                                .Where(m => !m.IsGenericMethod && m.GetMethodBody() != null && !m.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall));
+                                .Where(JitInspectorHelpers.IsSupportedForJitInspection);
 
-                            foreach (var method in methods)
+                            var constructors = type.GetConstructors(JitInspectorHelpers.DeclaredMembers)
+                                .Where(JitInspectorHelpers.IsSupportedForJitInspection);
+
+                            foreach (var method in Enumerable.Concat<MethodBase>(methods, constructors))
                             {
                                 if (cancellationToken.IsCancellationRequested) return;
 
@@ -64,18 +67,25 @@ namespace JitInspector.Search
 
         public IEnumerable<MethodIndex> Search(string query)
         {
-            query = query.ToLowerInvariant();
-            return _methodIndices.Where(m =>
-                m.Assembly.GetName().Name.ToLowerInvariant().Contains(query) ||
-                (m.Namespace?.ToLowerInvariant().Contains(query) ?? false) ||
-                m.DeclaringType.Name.ToLowerInvariant().Contains(query) ||
-                m.Method.Name.ToLowerInvariant().Contains(query));
+            return _methodIndices.Where(m => IsMatch(m, query));
+        }
+
+        private static bool IsMatch(MethodIndex m, string query)
+        {
+            if (m.Assembly.GetName().Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (m.Namespace != null && m.Namespace.Contains(query, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var name = JitInspectorHelpers.GetMethodSignature(m.Method, includeParamNames: false, includeRichText: false);
+            return name.Contains(query, StringComparison.OrdinalIgnoreCase);
         }
 
         public IEnumerable<Assembly> GetAssemblies() => _methodIndices.Select(m => m.Assembly).Distinct();
         public IEnumerable<string> GetNamespaces(Assembly assembly) => _methodIndices.Where(m => m.Assembly == assembly).Select(m => m.Namespace).Distinct();
         public IEnumerable<Type> GetTypes(string @namespace) => _methodIndices.Where(m => m.Namespace == @namespace).Select(m => m.DeclaringType).Distinct();
-        public IEnumerable<MethodInfo> GetMethods(Type type) => _methodIndices.Where(m => m.DeclaringType == type).Select(m => m.Method);
+        public IEnumerable<MethodBase> GetMethods(Type type) => _methodIndices.Where(m => m.DeclaringType == type).Select(m => m.Method);
 
     }
 }

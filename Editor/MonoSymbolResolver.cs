@@ -14,7 +14,7 @@ namespace JitInspector
                 return false;
             }
 
-            var name = JitInspectorHelpers.GetMethodSignature(method, includeParamNames: false);
+            var name = JitInspectorHelpers.GetMethodSignature(method, includeParamNames: false, includeRichText: true);
 
             if (trampoline)
                 name = "<color=#9CDCFE>tramp</color> " + name;

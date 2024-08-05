@@ -23,23 +23,32 @@ namespace JitInspector
             return method.GetMethodBody() != null;
         }
 
-        public static string GetMethodSignature(MethodBase method, bool includeParamNames)
+        public static string GetMethodSignature(MethodBase method, bool includeParamNames, bool includeRichText)
         {
             var builder = new StringBuilder();
-            AppendMethodSignature(method, builder, includeParamNames);
+            AppendMethodSignature(method, builder, includeParamNames, includeRichText);
             return builder.ToString();
         }
 
-        public static void AppendMethodSignature(MethodBase method, StringBuilder builder, bool includeParamNames)
+        public static void AppendMethodSignature(MethodBase method, StringBuilder builder, bool includeParamNames, bool includeRichText)
         {
             if (method.DeclaringType is Type declaringType)
             {
-                builder.AppendTypeName(declaringType);
+                builder.AppendTypeName(declaringType, includeRichText);
                 builder.Append(':');
             }
 
-            builder.AppendColored(method.Name, "#dcdcaa");
-            builder.AppendColored("(", "#efb839");
+            if (includeRichText)
+            {
+                builder.AppendColored(method.Name, "#dcdcaa");
+                builder.AppendColored("(", "#efb839");
+            }
+            else
+            {
+                builder.Append(method.Name);
+                builder.Append('(');
+            }
+
             var parameters = method.GetParameters();
 
             for (int i = 0; i < parameters.Length; i++)
@@ -47,7 +56,7 @@ namespace JitInspector
                 if (i > 0)
                     builder.Append(", ");
 
-                builder.AppendTypeName(parameters[i].ParameterType);
+                builder.AppendTypeName(parameters[i].ParameterType, includeRichText);
 
                 if (includeParamNames && !string.IsNullOrEmpty(parameters[i].Name))
                 {
@@ -61,14 +70,18 @@ namespace JitInspector
             if (method is MethodInfo info)
             {
                 builder.Append(':');
-                builder.AppendTypeName(info.ReturnType);
+                builder.AppendTypeName(info.ReturnType, includeRichText);
             }
 
             if (method.CallingConvention.HasFlag(CallingConventions.HasThis)
                 && !method.CallingConvention.HasFlag(CallingConventions.ExplicitThis))
             {
                 builder.Append(':');
-                builder.AppendColored("this", "#569cd6");
+
+                if (includeRichText)
+                    builder.AppendColored("this", "#569cd6");
+                else
+                    builder.Append("this");
             }
         }
 

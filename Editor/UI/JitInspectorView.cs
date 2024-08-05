@@ -113,7 +113,7 @@ namespace JitInspector.UI
             s_syntaxBuilder.AppendColored(method.DeclaringType.Name, JitInspectorHelpers.GetHighlightColor(method.DeclaringType));
             var typeString = s_syntaxBuilder.ToString();
             s_syntaxBuilder.Clear();
-            JitInspectorHelpers.AppendMethodSignature(method, s_syntaxBuilder, includeParamNames: true);
+            JitInspectorHelpers.AppendMethodSignature(method, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
             _selectedItemName.text = s_syntaxBuilder.ToString();
             _loadedSourceLines.Clear();
             var text = GetDisassembly(method);
@@ -250,7 +250,7 @@ namespace JitInspector.UI
             return targets.Select(m =>
             {
                 s_syntaxBuilder.Clear();
-                JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true);
+                JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
                 return new TreeViewItem(s_syntaxBuilder.ToString(), m);
             }).ToList();
         }
@@ -274,7 +274,7 @@ namespace JitInspector.UI
         public List<TreeViewItem> GetMethodItems(IGrouping<Type, MethodIndex> typeGroup)
         {
             return typeGroup
-                .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, includeParamNames: true), m.Method))
+                .Select(m => new TreeViewItem(JitInspectorHelpers.GetMethodSignature(m.Method, includeParamNames: true, includeRichText: true), m.Method))
                 .ToList();
         }
 

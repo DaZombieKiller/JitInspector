@@ -10,9 +10,14 @@ namespace JitInspector
             return builder.Append("<color=").Append(color).Append(">").Append(text).Append("</color>");
         }
 
-        public static StringBuilder AppendTypeName(this StringBuilder stringBuilder, Type type)
+        public static StringBuilder AppendTypeName(this StringBuilder stringBuilder, Type type, bool includeRichText)
         {
-            return stringBuilder.AppendColored(JitInspectorHelpers.GetTypeName(type), JitInspectorHelpers.GetHighlightColor(type));
+            if (includeRichText)
+                stringBuilder.AppendColored(JitInspectorHelpers.GetTypeName(type), JitInspectorHelpers.GetHighlightColor(type));
+            else
+                stringBuilder.Append(JitInspectorHelpers.GetTypeName(type));
+
+            return stringBuilder;
         }
     }
 }
