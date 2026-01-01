@@ -158,7 +158,14 @@ namespace JitInspector.UI
             Refresh();
             _initCtes = new CancellationTokenSource();
             _statusLabel.text = "Building index...";
-            await s_methodIndex.BuildIndexAsync(_initCtes.Token);
+            try
+            {
+                await s_methodIndex.BuildIndexAsync(_initCtes.Token);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
             _statusLabel.text = "Index built successfully.";
             await RefreshAsync();
             await Task.Delay(TimeSpan.FromSeconds(5));
@@ -173,7 +180,7 @@ namespace JitInspector.UI
                 goto NotFound;
 
             _tree.ExpandItem(asmItem);
-            nsItem = asmItem.Children?.FirstOrDefault(item => (string)item.Data == method.DeclaringType.Namespace);
+            nsItem = asmItem.Children?.FirstOrDefault(item => (string)item.Data == GetNamespace(method.DeclaringType.Namespace));
 
             if (nsItem == null)
                 goto NotFound;
@@ -322,22 +329,31 @@ namespace JitInspector.UI
             for (int i = 0; i < clt.Length; i++)
             {
                 var type = clt[i];
-                if (string.IsNullOrEmpty(type.Namespace)) continue;
-                if (s_hashSet.Contains(type.Namespace))
+                var ns = GetNamespace(type.Namespace);
+
+                if (s_hashSet.Contains(ns))
                     continue;
-                s_hashSet.Add(type.Namespace);
-                var name = type.Name;
-                data.Add(new TreeViewItem(type.Namespace, type.Namespace, null, true));
+
+                s_hashSet.Add(ns);
+                data.Add(new TreeViewItem(ns, ns, null, true));
             }
 
             return data;
+        }
+
+        private static string GetNamespace(string @namespace)
+        {
+            if (string.IsNullOrEmpty(@namespace))
+                return "-";
+
+            return @namespace;
         }
 
         private List<TreeViewItem> GetTypeItems(string @namespace)
         {
             var allTypes = s_assemblies.SelectMany(CacheLoadTypes);
             var types = allTypes
-                .Where(t => t.Namespace == @namespace)
+                .Where(t => GetNamespace(t.Namespace) == @namespace)
                 .OrderBy(t => t.Name)
                 .ToList();
 
@@ -367,25 +383,42 @@ namespace JitInspector.UI
 
         private List<TreeViewItem> GetMethodItems(Type type)
         {
-            var methods = type.GetMethods(JitInspectorHelpers.DeclaredMembers);
-            var constructors = type.GetConstructors(JitInspectorHelpers.DeclaredMembers);
-            var targets = Enumerable.Concat<MethodBase>(methods, constructors)
-                .Where(JitInspectorHelpers.IsSupportedForJitInspection)
-                .OrderBy(m => m.Name)
-                .ToList();
+            var targets = new List<TreeViewItem>();
 
-            return targets.Select(m =>
+            foreach (var m in type.GetConstructors(JitInspectorHelpers.DeclaredMembers))
             {
                 s_syntaxBuilder.Clear();
                 JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
-                return new TreeViewItem(s_syntaxBuilder.ToString(), m);
-            }).ToList();
+                targets.Add(new TreeViewItem(s_syntaxBuilder.ToString(), m));
+            }
+
+            foreach (var m in type.GetMethods(JitInspectorHelpers.DeclaredMembers))
+            {
+                if (m is MethodInfo { IsGenericMethod: true } info)
+                {
+                    foreach (var attr in m.GetCustomAttributes<JitGenericAttribute>())
+                    {
+                        var inst = info.MakeGenericMethod(attr.TypeArguments);
+                        s_syntaxBuilder.Clear();
+                        JitInspectorHelpers.AppendMethodSignature(inst, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
+                        targets.Add(new TreeViewItem(s_syntaxBuilder.ToString(), inst));
+                    }
+                }
+                else
+                {
+                    s_syntaxBuilder.Clear();
+                    JitInspectorHelpers.AppendMethodSignature(m, s_syntaxBuilder, includeParamNames: true, includeRichText: true);
+                    targets.Add(new TreeViewItem(s_syntaxBuilder.ToString(), m));
+                }
+            }
+
+            return targets;
         }
 
         public List<TreeViewItem> GetNamespaceItems(IGrouping<Assembly, MethodIndex> assemblyGroup)
         {
             return assemblyGroup
-                .GroupBy(m => m.Namespace)
+                .GroupBy(m => GetNamespace(m.Namespace))
                 .Select(g => new TreeViewItem(g.Key, g.Key, GetTypeItems(g), true))
                 .ToList();
         }
@@ -408,7 +441,7 @@ namespace JitInspector.UI
         private static unsafe string GetDisassembly(MethodBase method)
         {
             if (!JitInspectorHelpers.TryGetJitCode(method, out var code, out var size))
-                return string.Empty;
+                return "Failed to get disassembly";
 
             return GetDisassembly(method, (byte*)code, size, new IntelFormatter(new MonoSymbolResolver())
             {

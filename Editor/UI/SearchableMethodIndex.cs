@@ -45,15 +45,32 @@ namespace JitInspector.Search
 
                             foreach (var method in Enumerable.Concat<MethodBase>(methods, constructors))
                             {
-                                if (cancellationToken.IsCancellationRequested) return;
+                                if (cancellationToken.IsCancellationRequested)
+                                    return;
 
-                                _methodIndices.Add(new MethodIndex
+                                if (method.IsGenericMethod)
                                 {
-                                    Assembly = assembly,
-                                    Namespace = type.Namespace,
-                                    DeclaringType = type,
-                                    Method = method
-                                });
+                                    foreach (var attr in method.GetCustomAttributes<JitGenericAttribute>())
+                                    {
+                                        _methodIndices.Add(new MethodIndex
+                                        {
+                                            Assembly = assembly,
+                                            Namespace = type.Namespace,
+                                            DeclaringType = type,
+                                            Method = ((MethodInfo)method).MakeGenericMethod(attr.TypeArguments)
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    _methodIndices.Add(new MethodIndex
+                                    {
+                                        Assembly = assembly,
+                                        Namespace = type.Namespace,
+                                        DeclaringType = type,
+                                        Method = method
+                                    });
+                                }
                             }
                         }
                     }

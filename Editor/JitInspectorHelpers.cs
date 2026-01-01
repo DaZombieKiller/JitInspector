@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using static JitInspector.MonoInterop;
 using StringBuilder = System.Text.StringBuilder;
@@ -14,13 +15,16 @@ namespace JitInspector
 
         public static bool IsSupportedForJitInspection(MethodBase method)
         {
-            if (method.IsGenericMethod)
-                return false;
-
             if (method.MethodImplementationFlags.HasFlag(MethodImplAttributes.InternalCall))
                 return false;
 
-            return method.GetMethodBody() != null;
+            if (method.GetMethodBody() == null)
+                return false;
+
+            if (method is MethodInfo && method.IsGenericMethod)
+                return method.GetCustomAttributes<JitGenericAttribute>().Any();
+
+            return !method.IsGenericMethod;
         }
 
         public static string GetMethodSignature(MethodBase method, bool includeParamNames, bool includeRichText)
@@ -107,7 +111,7 @@ namespace JitInspector
 
         public static unsafe bool TryGetJitCode(MethodBase method, out void* code, out int size)
         {
-            if (method.GetMethodBody() == null || method.IsGenericMethod)
+            if (method.GetMethodBody() == null || (method.IsGenericMethod && !method.IsConstructedGenericMethod))
             {
                 code = null;
                 size = 0;

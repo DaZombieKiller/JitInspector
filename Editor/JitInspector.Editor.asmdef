@@ -1,7 +1,9 @@
 {
     "name": "JitInspector.Editor",
     "rootNamespace": "JitInspector",
-    "references": [],
+    "references": [
+        "GUID:b8b74fb9b59a2d640bd87fd06abbf28a"
+    ],
     "includePlatforms": [
         "Editor"
     ],
